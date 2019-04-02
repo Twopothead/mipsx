@@ -122,7 +122,8 @@ namespace CONTROL{
             default:
                 break;
         }
-        x__err("%x %x",CTRL_CP0_UNIT.rt,CTRL_CP0_UNIT.rd);
+        // x__err("%x %x",CTRL_CP0_UNIT.rt,CTRL_CP0_UNIT.rd);
+        
     }
     void cp0_operations(uint32_t writeData){
         // CPR[0, rd, sel] ← rt
@@ -187,6 +188,7 @@ namespace CONTROL{
             case 0b000000:/* R-Type */
                 CTRL_UNIT.o_wreg = true;
                 CTRL_UNIT.o_m2reg = false;
+                CTRL_UNIT.o_regrt = false;
                 switch (CTRL_UNIT.funct)
                 {
                     case 0b100000:/* add */
@@ -361,7 +363,7 @@ namespace CONTROL{
             case 0b000101:/* bne */
                 CTRL_UNIT.o_sext = true;
                 if(!CTRL_UNIT.i_rsrtequ)
-                    CTRL_UNIT.o_pcsrc = 0b01;
+                    CTRL_UNIT.o_pcsrc = 0b01;//;0b01;
                 break;
             case 0b000001:/* Zero-relative branches */
                 switch (CTRL_UNIT.rt)

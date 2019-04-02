@@ -1,5 +1,6 @@
 #pragma once
 #include <inttypes.h>
+#include "debug.h"
 namespace Bitwise
 {
 
@@ -76,11 +77,11 @@ namespace DECODE
         return extendedValue;
     }
     uint32_t shift_left_2(uint32_t in_26b){
-        return in_26b << 2;
+        return (in_26b << 2);
     };
-    uint32_t calcu_bpc(uint32_t _dpc4,uint32_t _imm_shift2){// beq or bne
+    uint32_t calcu_bpc(uint32_t _dpc4,uint32_t _sextended_imm_shift2){// beq or bne
         uint32_t branch_target_address;
-        branch_target_address = _dpc4 + _imm_shift2;
+        branch_target_address = _dpc4 + _sextended_imm_shift2;
         return branch_target_address;        
     }
     uint32_t calcu_jpc(uint32_t _dpc4,uint32_t target26b){// j or jal

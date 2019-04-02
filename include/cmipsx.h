@@ -29,9 +29,6 @@ class MIPSX_SYSTEM
     friend class Monitor;
     void IF(pr::Pre_IF_t &Pre_IF, pr::IF_ID_t &IF_ID)
     {
-// IF/ID.IR ← Mem[PC];
-// IF/ID.NPC,PC ← (if ((EX/MEM.opcode == branch) & EX/MEM.cond){EX/MEM.
-// ALUOutput} else {PC+4});
         using namespace IF_Signals;
         using namespace CrossPipelineWires;
         using namespace Multiplexer::IFMUX;
@@ -65,13 +62,21 @@ class MIPSX_SYSTEM
         rd = get_rd(IF_ID.IR);
         imm = get_immediate(IF_ID.IR);
         dpc4 = IF_ID.dpc4;
-        bpc = calcu_bpc(dpc4,shift_left_2(imm));
-        jpc = calcu_jpc(dpc4,addr);
+  
         CTRL_UNIT.op = op;
         CTRL_UNIT.funct = funct;
         CTRL_UNIT.rs = rs;
         CTRL_UNIT.rt = rt;
-        ID_rsrt_equ = (da == db);
+
+        uint32_t qa,qb;// get
+        qa = cpu.gp.register_file[rs];
+        qb = cpu.gp.register_file[rt];
+        setFWDA_MUX(fwda,qa,EX_ealu,MEM_malu,MEM_mmo);
+        da = FWDA_MUX.o_ID_a;
+        setFWDB_MUX(fwdb,qb,EX_ealu,MEM_malu,MEM_mmo);
+        db = FWDB_MUX.o_ID_b;
+
+        ID_rsrt_equ = ((da == db)?true:false);
         CTRL_UNIT.i_rsrtequ = ID_rsrt_equ;
         CTRL_CP0_UNIT.cop0_ins = IF_ID.IR;
         Control();
@@ -88,27 +93,15 @@ class MIPSX_SYSTEM
         fwdb = CTRL_UNIT.o_fwdb;
         setREGRT_MUX(regrt,rd,rt);
         drn = REGRT_MUX.o_drn;
-        uint32_t qa,qb;// get
-        qa = cpu.gp.register_file[rs];
-        qb = cpu.gp.register_file[rt];
-        setFWDA_MUX(fwda,qa,EX_ealu,MEM_malu,MEM_mmo);
-        da = FWDA_MUX.o_ID_a;
-        setFWDB_MUX(fwdb,qb,EX_ealu,MEM_malu,MEM_mmo);
-        db = FWDB_MUX.o_ID_b;
-        ID_pcd = IF_ID.PCd;
-        // ID/EX.A ← Regs[IF/ID.IR[rs]]; ID/EX.B ← Regs[IF/ID.IR[rt]];
-        // ID/EX.NPC ← IF/ID.NPC; ID/EX.IR ← IF/ID.IR;
-        // ID/EX.Imm ← sign-extend(IF/ID.IR[immediate field]);
-        //     uint32_t jPC;
 
-        // uint32_t da = Regs[rs];
-        // uint32_t db = Regs[rt];
-        // bool rsrt_equ = (da == db);
+        ID_pcd = IF_ID.PCd;
+
         if(CTRL_UNIT.o_sext)
            dimm = sign_extend(imm);
         else 
            dimm = zero_extend(imm);
-        
+        bpc = calcu_bpc(dpc4,shift_left_2(dimm));
+        jpc = calcu_jpc(dpc4,addr);
         
         ID_CP0_M::setSEPC_MUX(CTRL_CP0_UNIT.o_sepc,IF_pc,ID_pcd,EX_pce,MEM_pcm);
         cp0_epcin = ID_CP0_M::SEPC_MUX.o_epcin;
@@ -120,8 +113,11 @@ class MIPSX_SYSTEM
 // mux2x32 epc_mx (epcin,db,mtc0,epc_in);
 // // mux for epc reg
         cp0_operations(db);
-        // if(CTRL_CP0_UNIT.o_mtc0)
+        // if(CTRL_CP0_UNIT.o_mtc0){
         //     R3000_CP0::dump_cp0_regs();
+        //     x__err("iscache %x ",R3000_CP0::cp0_regs.SR.IsC);
+        // }
+            
 
 
         using namespace CrossPipelineWires;
@@ -229,6 +225,7 @@ class MIPSX_SYSTEM
         MEM_WB.walu = EX_MEM.malu;
         MEM_WB.wmo;
     
+    MEM_WB.debug_wbPC = EX_MEM.PCm;
         // MEM_WB.ALUOutput = EX_MEM.ALUOutput;
         // bool WriteMem;
 
@@ -264,7 +261,8 @@ class MIPSX_SYSTEM
         using namespace pipeline_registers;
         using namespace CrossPipelineWires;
         CrossPipelineWires::clearCrossPipelineWires();
-        x__log("%x\t",Pre_IF.PC);
+        // x__log("%x\t",Pre_IF.PC);
+        x__log("%x\t",MEM_WB.debug_wbPC);
         WB(MEM_WB, cpu.gp);
         MEM(EX_MEM, MEM_WB);
         EX(ID_EX, EX_MEM);
@@ -278,11 +276,4 @@ class MIPSX_SYSTEM
         // cpu.dump_regs();
     }
 };
-class Monitor{
-    MIPSX_SYSTEM *sys;
-    public:
-    Monitor(MIPSX_SYSTEM &p){ sys = &p;};
-    void showStatus(){
-        sys->cpu.dump_regs();
-    }
-};
+

@@ -50,6 +50,7 @@ namespace pipeline_registers
         uint32_t wmo;
         uint32_t walu;
         uint32_t wrn;
+        uint32_t debug_wbPC;
     } MEM_WB;
     void clear_pipeline_registers()
     {
