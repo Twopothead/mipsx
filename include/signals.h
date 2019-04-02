@@ -10,7 +10,8 @@ namespace IF_Signals
         npc = 0,pc4 = 0,ins = 0;
     }
 
-} // namespace IF_Signals
+} 
+
 namespace ID_Signals
 {
     bool wreg;
@@ -38,11 +39,16 @@ namespace ID_Signals
     uint32_t addr;
     uint32_t imm;
     uint32_t rd;
+    uint32_t cp0_epcin;
+    bool cp0_exc;
     void clear_ID_temp_signals(){
         wreg = false,wreg = false,m2reg = false,wmem = false,jal = false,aluimm = false,shift =false,regrt = false,sext = false;
         fwda = 0,fwdb = 0,jpc = 0,dpc4 = 0,bpc = 0,da = 0,db = 0, dimm = 0,drn = 0,op = 0,funct = 0,rs = 0,rt = 0,addr = 0,imm =0,rd = 0;
+        cp0_epcin = 0;
+        cp0_exc = false;
     }
-} // namespace ID_Signals
+} 
+
 namespace EXE_Signals
 {
     uint32_t epc8;
@@ -55,7 +61,8 @@ namespace EXE_Signals
     void clear_ex_temp_signals(){
         epc8 = 0,sa = 0,eALUOp1 = 0,eALUOp2 = 0,eALUresult = 0,ealu = 0,ern =0;
     }
-} // namespace EXE_Signals
+} 
+
 namespace MEM_Signals
 {
     uint32_t mmo;

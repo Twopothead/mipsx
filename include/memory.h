@@ -4,6 +4,7 @@
 #include <cstring>
 #include <stdlib.h>
 #include <stdio.h>
+#include "iomap.h"
 namespace BIOS
 {
     void load_ROM(uint8_t *rom_p, const char *psx_bios_path)
@@ -14,7 +15,8 @@ namespace BIOS
             fread(rom_p, 1, PlayStationMemLayout::mem_ROM_size, SCPH1001_fn);
         fclose(SCPH1001_fn);
     }
-} // namespace BIOS
+} 
+
 
 class PlayStationMemory
 {
@@ -50,11 +52,13 @@ class PlayStationMemory
             pointer = (T *)&bios_Rom[normalizedAddress - 0x1fc00000];
             break;
         case 0x1f800000 ... 0x1f80fffc:
-            // pointer = (T*)&ioports[normalizedAddress - 0x1f800000];
+                return IO_Map::io_read(normalizedAddress - 0x1f800000,32);   // pointer = (T*)&ioports[normalizedAddress - 0x1f800000];
+                // do not use pointer here
         case 0x1ffe0130:
             pointer = (T *)&CacheCtrl;
             break;
         default:
+            x__err("read error: normalizedAddress:%x",normalizedAddress);
             break;
         }
         return *pointer;
@@ -72,13 +76,16 @@ class PlayStationMemory
         case 0x1fc00000 ... 0x1fc7fffc:
             break;
         case 0x1f800000 ... 0x1f80fffc:
-            // pointer = (T*)&ioports[normalizedAddress - 0x1f800000];
+            IO_Map::io_write(normalizedAddress - 0x1f800000,data,32);//pointer = (T*)&ioports[normalizedAddress - 0x1f800000];
+                return;// do not use pointer here
         case 0x1ffe0130:
             pointer = (T *)&CacheCtrl;
             break;
         default:
+            x__err("write error: normalizedAddress:%x,data:%x ",normalizedAddress,data);
             break;
         }
+
         *pointer = data;
         return;
     }

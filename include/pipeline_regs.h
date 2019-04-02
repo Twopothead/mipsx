@@ -12,6 +12,7 @@ namespace pipeline_registers
         uint32_t IR;
         uint32_t dpc4;
         bool dwpcir;
+        uint32_t PCd;
     } IF_ID;
     struct ID_EX_t
     {
@@ -28,6 +29,7 @@ namespace pipeline_registers
         uint32_t eb;
         uint32_t eimm;
         uint32_t ern0;
+        uint32_t PCe;
     } ID_EX;
     struct EX_MEM_t
     {
@@ -38,6 +40,7 @@ namespace pipeline_registers
         uint32_t malu;
         uint32_t mb;
         uint32_t mrn;
+        uint32_t PCm;
     } EX_MEM;
     struct MEM_WB_t
     {

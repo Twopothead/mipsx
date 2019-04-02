@@ -4,6 +4,9 @@
 #include "alu.h"
 #include "wires.h"
 #include "forward.h"
+#include "debug.h"
+#include "bitwise.h"
+#include "cp0.h"
 namespace CONTROL{
     struct {
         uint32_t i_mrn;
@@ -29,8 +32,121 @@ namespace CONTROL{
         uint32_t rs;
         uint32_t rt;
         uint32_t o_pcsrc;
-        uint32_t o_wpcir;
+        uint32_t o_wpcir;        
     }CTRL_UNIT;
+
+    struct {
+        uint32_t cop0_ins;
+        uint32_t rt;
+        uint32_t rd;
+        bool o_cancel;
+        bool o_isbr;
+        bool o_ove;
+        bool o_wsta;/* cp0 reg 12 */
+        bool o_wcau;/* cp0 reg 13 */
+        bool o_wepc;/* cp0 reg 14 */
+        uint32_t o_wcp0_regs_sel;/*选择　写信号*/
+        bool o_mtc0;
+        uint32_t o_cause;
+        uint32_t o_sepc;
+        bool o_exc;
+    }CTRL_CP0_UNIT;
+    void cp0_notsoimportantCases(){
+        const uint32_t ins_TLBR  = 0b01000010000000000000000000000001;
+        const uint32_t ins_TLBP  = 0b01000010000000000000000000001000;
+        const uint32_t ins_RFE   = 0b01000010000000000000000000010000;
+        const uint32_t ins_TLBWI = 0b01000010000000000000000000000010;
+        const uint32_t ins_TLBWR = 0b01000010000000000000000000000110;
+        switch (CTRL_CP0_UNIT.cop0_ins)
+        {
+            case ins_TLBR:// TLBR
+                x__err("unhandled cp0 TLBR");
+                break;
+            case ins_TLBP:// TLBP
+                x__err("unhandled cp0 TLBP");
+                break;
+            case ins_RFE:// RFE
+                x__err("unhandled cp0 RFE");
+                break;
+            case ins_TLBWI:// TLBWI
+                x__err("unhandled cp0 TLBWI");
+                break;
+            case ins_TLBWR:// TLBWR
+                x__err("unhandled cp0 TLBWR");
+                break;
+            default:
+                break;
+        }
+    }
+    void cp0_mtc0_ctrl(){
+        // CPR[0, rd, sel] ← rt
+        switch (CTRL_CP0_UNIT.rd)
+        {
+                case 12:// cp0 r12 status_reg
+                    CTRL_CP0_UNIT.o_wsta = true;
+                    break;
+                case 13:// cp0 r13 cause_reg
+                    CTRL_CP0_UNIT.o_wcau = true;
+                    break;
+                case 14:// cp0 r14 Exception Program Counter
+                    CTRL_CP0_UNIT.o_wepc = true;
+                case 15 ... 31:
+                    CTRL_CP0_UNIT.o_wcp0_regs_sel = CTRL_CP0_UNIT.rd | 0xffff0000;
+                    /* 为防止出现默认的0,这里我把高16位置1,最后选寄存器时再&回来，我们只用到它的最低5位来选cp0 regs */
+                    break;
+                case 0 ... 11:
+                    CTRL_CP0_UNIT.o_wcp0_regs_sel = CTRL_CP0_UNIT.rd | 0xffff0000;
+                    /* 为防止出现默认的0,这里我把高16位置1,最后选寄存器时再&回来，我们只用到它的最低5位来选cp0 regs */
+                    break;
+                default:
+                    break;
+        }
+        
+    }
+    void cp0_ctrl(){
+        using namespace DECODE;
+        CTRL_CP0_UNIT.rd = get_rd(CTRL_CP0_UNIT.cop0_ins);
+        CTRL_CP0_UNIT.rt = get_rt(CTRL_CP0_UNIT.cop0_ins);
+        uint MTMF_rs = get_rs(CTRL_CP0_UNIT.cop0_ins);
+        uint32_t funct = get_funct(CTRL_CP0_UNIT.cop0_ins);
+        cp0_notsoimportantCases();
+        switch (MTMF_rs)
+        {
+            case 0b00000:/* MF mfc0 */
+                // TODO
+                break;
+            case 0b00100:/* MT mtc0 */
+                CTRL_CP0_UNIT.o_mtc0 = true;
+                cp0_mtc0_ctrl();
+                break;
+            default:
+                break;
+        }
+        x__err("%x %x",CTRL_CP0_UNIT.rt,CTRL_CP0_UNIT.rd);
+    }
+    void cp0_operations(uint32_t writeData){
+        // CPR[0, rd, sel] ← rt
+        if(CTRL_CP0_UNIT.o_mtc0){
+            if(CTRL_CP0_UNIT.o_wsta){
+                R3000_CP0::cp0_regs.SR.raw = writeData; 
+                return;
+            }
+            if(CTRL_CP0_UNIT.o_wcau){
+                R3000_CP0::cp0_regs.CAUSE.raw = writeData; 
+                return;
+            }
+            if(CTRL_CP0_UNIT.o_wepc){
+                R3000_CP0::cp0_regs.EPC = writeData;
+                return;
+            }
+            uint32_t rd_sel = CTRL_CP0_UNIT.o_wcp0_regs_sel & 0x0000ffff;//呼应上文
+            rd_sel &= 0b11111;//32 cp0 regs
+            R3000_CP0::cp0_regs.val[rd_sel] = writeData;// CPR[0, rd, sel] ← rt
+        }
+
+        
+    }
+
     void clear_ctrl(){
         CTRL_UNIT.o_wreg=false;
         CTRL_UNIT.o_m2reg=false;
@@ -44,7 +160,19 @@ namespace CONTROL{
         CTRL_UNIT.o_wpcir=0b00;
         CTRL_UNIT.o_pcsrc=0b00;
         CTRL_UNIT.o_wpcir=0b00;
+        CTRL_CP0_UNIT.o_cancel = false;
+        CTRL_CP0_UNIT.o_isbr = false;
+        CTRL_CP0_UNIT.o_ove = false;
+        CTRL_CP0_UNIT.o_wsta = false;
+        CTRL_CP0_UNIT.o_wcau = false;
+        CTRL_CP0_UNIT.o_wepc = false;
+        CTRL_CP0_UNIT.o_wcp0_regs_sel = 0x0;
+        CTRL_CP0_UNIT.o_mtc0 = false;
+        CTRL_CP0_UNIT.o_cause = 0x0;
+        CTRL_CP0_UNIT.o_sepc = 0;
+        CTRL_CP0_UNIT.o_exc = false;
     }
+
     void Control(){
         clear_ctrl();
         CTRL_UNIT.i_mrn = CrossPipelineWires::MEM_mrn;
@@ -154,7 +282,7 @@ namespace CONTROL{
 
             case 0b000010:/* j */
                 CTRL_UNIT.o_pcsrc = 0b11;
-                
+
                 break;
             case 0b000011:/* jal */
                 CTRL_UNIT.o_wreg = true;
@@ -218,6 +346,8 @@ namespace CONTROL{
                 ALUOP = ALU_ADD;
                 break;
             case 0b010000:// cop0 operations
+                // x__err("unhandled cp0");
+                cp0_ctrl();
                 break;
             case 0b010001:// cop1 operations
                 break;
@@ -323,4 +453,6 @@ namespace CONTROL{
         CTRL_UNIT.o_fwda = calcuforwardA(CTRL_UNIT.rs);
         CTRL_UNIT.o_fwdb = calcuforwardB(CTRL_UNIT.rt);
     }
+
 }
+

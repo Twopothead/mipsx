@@ -31,8 +31,38 @@ namespace Multiplexer{
             }
 
         }
+        namespace IF_CP0_M{
+            struct {
+                uint32_t npc;
+                uint32_t epc;
+                uint32_t base;
+                uint32_t o_next_pc;
+            }NEXTPC_MUX;
+            void setNEXTPC_MUX(const uint32_t sel_pc,
+                    uint32_t npc,uint32_t epc,uint32_t base){
+                NEXTPC_MUX.npc = npc,NEXTPC_MUX.epc = epc,NEXTPC_MUX.base = base;        
+                switch (sel_pc)
+                {
+                    case 0b00:
+                        NEXTPC_MUX.o_next_pc = NEXTPC_MUX.npc;
+                        break;
+                    case 0b01:
+                        NEXTPC_MUX.o_next_pc = NEXTPC_MUX.epc;
+                        break;
+                    case 0b10:
+                        NEXTPC_MUX.o_next_pc = NEXTPC_MUX.base;
+                        break;
+                    default:
+                        break;
+                }
+
+            }
+
+
+        }
 
     }
+    
     namespace IDMUX{
         struct {
             uint32_t rd;
@@ -77,7 +107,7 @@ namespace Multiplexer{
                         break;
                 }
         }
-        struct {
+        struct FWDB_MUX_t{
             uint32_t qb;
             uint32_t exe_alu;
             uint32_t mem_alu;
@@ -107,9 +137,40 @@ namespace Multiplexer{
                         break;
                 }
         }
+        namespace ID_CP0_M{
+            struct SEPC_MUX_t{
+                uint32_t pc;
+                uint32_t pcd;
+                uint32_t pce;
+                uint32_t pcm;
+                uint32_t o_epcin;
+            }SEPC_MUX;
+            void setSEPC_MUX(const uint32_t sel_sepc,
+                    uint32_t pc,uint32_t pcd,uint32_t pce,uint32_t pcm){
+                    SEPC_MUX.pc = pc,SEPC_MUX.pcd = pcd,SEPC_MUX.pce,SEPC_MUX.pcm;
+                switch (sel_sepc)
+                {
+                    case 0b00:
+                        SEPC_MUX.o_epcin = SEPC_MUX.pc;
+                        break;
+                    case 0b01:
+                        SEPC_MUX.o_epcin = SEPC_MUX.pcd;
+                        break;
+                    case 0b10:
+                        SEPC_MUX.o_epcin = SEPC_MUX.pce;
+                        break;
+                    case 0b11:
+                        SEPC_MUX.o_epcin = SEPC_MUX.pcm;
+                        break;
+                    default:
+                        break;
+                }
+
+            }
+        }
     }
 namespace EXEMUX{
-        struct {
+        struct ESHIFT_MUX_t{
             uint32_t sa;
             uint32_t ea;
             uint32_t o_src1;
@@ -123,7 +184,7 @@ namespace EXEMUX{
                 else
                     ESHIFT_MUX.o_src1 = ESHIFT_MUX.ea;
         }
-        struct {
+        struct EALUIMM_MUX_t{
             uint32_t _eimm;
             uint32_t eb;
             uint32_t o_src2;
@@ -137,7 +198,7 @@ namespace EXEMUX{
                 else
                     EALUIMM_MUX.o_src2 = EALUIMM_MUX.eb;
         }
-        struct {
+        struct EJAL_MUX_t{
             uint32_t epc8;
             uint32_t eALUresult;
             uint32_t o_ealu;
@@ -153,7 +214,7 @@ namespace EXEMUX{
         }
     }
 namespace WBMUX{
-        struct {
+        struct WM2REG_MUX_t{
             uint32_t wmo;
             uint32_t walu;
             uint32_t o_wdi;

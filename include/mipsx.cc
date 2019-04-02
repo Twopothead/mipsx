@@ -31,7 +31,7 @@ int main()
     // SDL_UnlockSurface(surface);
     MIPSX_SYSTEM psx;
     Monitor monitor(psx);
-    for (int i = 0; i < 100; i++)
+    for (int i = 0; i < 95; i++)
     {
         printf("[%06d]\t",i-3);
         psx.tick();
@@ -39,7 +39,5 @@ int main()
             monitor.showStatus();
         }
     }
-    
-
     return 0;
 }

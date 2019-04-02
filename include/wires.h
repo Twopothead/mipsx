@@ -18,6 +18,10 @@ namespace CrossPipelineWires
     bool MEM_mwreg;
     uint32_t MEM_malu;
     uint32_t MEM_mmo;
+    uint32_t IF_pc;
+    uint32_t ID_pcd;
+    uint32_t EX_pce;
+    uint32_t MEM_pcm;
     void clearCrossPipelineWires(){
         IF_npc = 0,ID_bpc = 0,ID_da = 0,ID_jpc = 0;
         ID_rsrt_equ = false;
@@ -26,5 +30,6 @@ namespace CrossPipelineWires
         EX_ealu = 0,MEM_mrn = 0;
         MEM_mm2reg = false,MEM_mwreg = false;
         MEM_malu = 0,MEM_mmo = 0;
+        IF_pc = 0,ID_pcd = 0,EX_pce = 0,MEM_pcm = 0;
     }
 } 

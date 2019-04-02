@@ -10,6 +10,7 @@
 #include "pipeline_regs.h"
 #include "control.h"
 #include "debug.h"
+#include "cp0.h"
 namespace pr = pipeline_registers;
 
 class MIPSX_SYSTEM
@@ -22,6 +23,7 @@ class MIPSX_SYSTEM
     {
         using namespace PlayStationMemLayout;
         pipeline_registers::clear_pipeline_registers();
+        memset(&R3000_CP0::cp0_regs,0,sizeof(R3000_CP0::cp0_regs));
         pipeline_registers::Pre_IF.PC = start_Rom;
     };
     friend class Monitor;
@@ -34,13 +36,17 @@ class MIPSX_SYSTEM
         using namespace CrossPipelineWires;
         using namespace Multiplexer::IFMUX;
         clear_temp_IF_signals();
-        IF_ID.IR = memory.read<uint32_t>(Pre_IF.PC);
-        pc4 = Pre_IF.PC + 4;
+        uint32_t pc =  Pre_IF.PC;
+        IF_pc = pc;
+        IF_ID.IR = memory.read<uint32_t>(pc);
+        pc4 = pc + 4;
         IF_ID.dpc4 = pc4;
         setPCSRC_MUX(ID_pcsrc,pc4,ID_bpc,ID_da,ID_jpc);
         npc = PCSRC_MUX.o_npc;
         IF_npc = npc;
+        IF_ID.PCd = pc;
         printf("IF %08x\t", IF_ID.IR);
+        using namespace R3000_CP0;
         return;
     }
     void ID(pr::IF_ID_t &IF_ID, pr::ID_EX_t &ID_EX)
@@ -67,6 +73,7 @@ class MIPSX_SYSTEM
         CTRL_UNIT.rt = rt;
         ID_rsrt_equ = (da == db);
         CTRL_UNIT.i_rsrtequ = ID_rsrt_equ;
+        CTRL_CP0_UNIT.cop0_ins = IF_ID.IR;
         Control();
         wreg = CTRL_UNIT.o_wreg;
         m2reg = CTRL_UNIT.o_m2reg;
@@ -88,6 +95,7 @@ class MIPSX_SYSTEM
         da = FWDA_MUX.o_ID_a;
         setFWDB_MUX(fwdb,qb,EX_ealu,MEM_malu,MEM_mmo);
         db = FWDB_MUX.o_ID_b;
+        ID_pcd = IF_ID.PCd;
         // ID/EX.A ← Regs[IF/ID.IR[rs]]; ID/EX.B ← Regs[IF/ID.IR[rt]];
         // ID/EX.NPC ← IF/ID.NPC; ID/EX.IR ← IF/ID.IR;
         // ID/EX.Imm ← sign-extend(IF/ID.IR[immediate field]);
@@ -100,12 +108,22 @@ class MIPSX_SYSTEM
            dimm = sign_extend(imm);
         else 
            dimm = zero_extend(imm);
+        
+        
+        ID_CP0_M::setSEPC_MUX(CTRL_CP0_UNIT.o_sepc,IF_pc,ID_pcd,EX_pce,MEM_pcm);
+        cp0_epcin = ID_CP0_M::SEPC_MUX.o_epcin;
+
+//         mux2x32 sta_mx (stalr,db,mtc0,sta_in);
+// // mux for status reg
+// mux2x32 cau_mx (cause,db,mtc0,cau_in);
+// // mux for cause reg
+// mux2x32 epc_mx (epcin,db,mtc0,epc_in);
+// // mux for epc reg
+        cp0_operations(db);
+        // if(CTRL_CP0_UNIT.o_mtc0)
+        //     R3000_CP0::dump_cp0_regs();
 
 
-        // mux
-        // ID_EX.A = da;
-        // ID_EX.B = db;
-        // ID_EX.ePCplus4 = IF_ID.dPCplus4;
         using namespace CrossPipelineWires;
         ID_bpc = bpc;
         ID_da;
@@ -125,6 +143,7 @@ class MIPSX_SYSTEM
         ID_EX.eb = db;
         ID_EX.eimm = dimm;
         ID_EX.ern0 = drn;
+        ID_EX.PCe = IF_ID.PCd;
         printf("ID %08x\t", ID_EX.IR);
         return;
     }
@@ -154,12 +173,14 @@ class MIPSX_SYSTEM
             ern = ID_EX.ern0 | 0b11111;//jal $31
         else 
             ern = ID_EX.ern0;
+        
 
         using namespace CrossPipelineWires;
         EX_ern = ern;
         EX_em2reg = ID_EX.em2reg;
         EX_ewreg = ID_EX.ewreg;
         EX_ealu = ealu;
+        EX_pce = ID_EX.PCe;
 
         EX_MEM.IR = ID_EX.IR;
         EX_MEM.mwreg = ID_EX.ewreg;
@@ -168,6 +189,7 @@ class MIPSX_SYSTEM
         EX_MEM.malu = ealu;
         EX_MEM.mb = ID_EX.eb;
         EX_MEM.mrn = ern;
+        EX_MEM.PCm = ID_EX.PCe;
         printf("EX %08x\t", EX_MEM.IR);
         return;
     }
@@ -188,6 +210,7 @@ class MIPSX_SYSTEM
         MEM_mm2reg = EX_MEM.mm2reg;
         MEM_mwreg = EX_MEM.mwreg;
         MEM_malu = EX_MEM.malu;
+        MEM_pcm = EX_MEM.PCm;
 
 
         MEM_mmo = mmo;// mmo
