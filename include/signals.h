@@ -41,11 +41,13 @@ namespace ID_Signals
     uint32_t rd;
     uint32_t cp0_epcin;
     bool cp0_exc;
+    uint32_t dsl_width_sel;
     void clear_ID_temp_signals(){
         wreg = false,wreg = false,m2reg = false,wmem = false,jal = false,aluimm = false,shift =false,regrt = false,sext = false;
         fwda = 0,fwdb = 0,jpc = 0,dpc4 = 0,bpc = 0,da = 0,db = 0, dimm = 0,drn = 0,op = 0,funct = 0,rs = 0,rt = 0,addr = 0,imm =0,rd = 0;
         cp0_epcin = 0;
         cp0_exc = false;
+        dsl_width_sel = 0;
     }
 } 
 
@@ -66,8 +68,12 @@ namespace EXE_Signals
 namespace MEM_Signals
 {
     uint32_t mmo;
+    uint32_t storeload_width_sel;
+    uint32_t storeload_width;
     void clear_MEM_temp_signals(){
         mmo = 0;
+        storeload_width_sel = 0;
+        storeload_width = 32;// default 32 
     }
 }
 namespace WB_Signals

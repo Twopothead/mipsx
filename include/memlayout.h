@@ -40,4 +40,34 @@ namespace PlayStationMemLayout
     const uint32_t CacheCtrl_addr = 0xfffe0130; /* size:4 */
                                                 /* Ram Size */
     const uint32_t Ram_Size_addr = 0x1f801060;  /* (usually 00000B88h; 2MB RAM mirrored in first 8MB) */
-} // namespace PlayStationMemLayout
+}
+
+// regions specified by the MIPS architecture
+
+// kseg2 cached | MMU  (KSEG2 doesn’t share anything with the other regions) (2块512MB=1024MB) 
+//100000000
+// f0000000
+// e0000000
+// d0000000
+// c0000000
+
+// kseg1  no cached|no MMU (Attention! no cached) (1块512MB)  MSB'101'
+// c0000000
+// b0000000                      // 0xbfc00000-0xbfc7ffff BIOS 512K
+// a0000000        0xA0xxxxxx    Mirror (2 Meg)
+
+// kseg0  cached |no MMU (1块512MB)     MSB'100'
+// a0000000
+// 90000000
+// 80000000        0x80xxxxxx    Mirror (2 Meg)
+
+// kuseg  cached | MMU (4块512MB=2048MB)
+// 80000000
+// 70000000
+// 60000000
+// 50000000
+// 40000000
+// 30000000
+// 20000000
+// 10000000
+// 00000000        0x00xxxxxx    // 0x00000000-0x001fffff Real

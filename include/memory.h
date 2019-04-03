@@ -18,6 +18,7 @@ namespace BIOS
 } 
 
 
+
 class PlayStationMemory
 {
 
@@ -52,7 +53,7 @@ class PlayStationMemory
             pointer = (T *)&bios_Rom[normalizedAddress - 0x1fc00000];
             break;
         case 0x1f800000 ... 0x1f80fffc:
-                return IO_Map::io_read(normalizedAddress - 0x1f800000,32);   // pointer = (T*)&ioports[normalizedAddress - 0x1f800000];
+                return io_read( virtual_addr,sizeof(T)*8 );//return IO_Map::io_read(normalizedAddress - 0x1f800000,32);   // pointer = (T*)&ioports[normalizedAddress - 0x1f800000];
                 // do not use pointer here
         case 0x1ffe0130:
             pointer = (T *)&CacheCtrl;
@@ -62,6 +63,24 @@ class PlayStationMemory
             break;
         }
         return *pointer;
+    }
+    uint32_t read_wrapper(uint32_t virtual_addr,uint32_t width){
+        switch (width)
+        {
+            case 32:// word
+                return read<uint32_t>(virtual_addr);
+                break;
+            case 16:// half word
+                return (uint32_t)read<uint16_t>(virtual_addr);
+                break;
+            case 8:// byte
+                return (uint32_t)read<uint8_t>(virtual_addr);
+                break;        
+            default://default word 32
+                return read<uint32_t>(virtual_addr);
+                break;
+        }
+
     }
     template <typename T>
     void write(uint32_t virtual_addr, T data)
@@ -74,20 +93,43 @@ class PlayStationMemory
             pointer = (T *)&real_main_Ram[normalizedAddress & ~0x00600000];
             break;
         case 0x1fc00000 ... 0x1fc7fffc:
-            break;
+            break;// ignore write to BIOS
         case 0x1f800000 ... 0x1f80fffc:
-            IO_Map::io_write(normalizedAddress - 0x1f800000,data,32);//pointer = (T*)&ioports[normalizedAddress - 0x1f800000];
+            io_write(virtual_addr,data,sizeof(T)*8);// normalizedAddress - 0x1f800000
+            //pointer = (T*)&ioports[normalizedAddress - 0x1f800000];
                 return;// do not use pointer here
         case 0x1ffe0130:
             pointer = (T *)&CacheCtrl;
             break;
         default:
-            x__err("write error: normalizedAddress:%x,data:%x ",normalizedAddress,data);
+            x__err("write error: virtualaddr:%x,normalizedAddress:%x,data:%x ",virtual_addr,normalizedAddress,data);
             break;
         }
 
         *pointer = data;
         return;
     }
+    void write_wrapper(uint32_t virtual_addr,uint32_t data,uint32_t width){
+        uint16_t half_word_data = 0x0000ffff & data;
+        uint8_t byte_data = 0xff & data;
+        switch (width)
+        {
+            case 32:// word
+                write<uint32_t>(virtual_addr,data);
+                break;
+            case 16:// half word
+                write<uint16_t>(virtual_addr,half_word_data);
+                break;
+            case 8:// byte
+                write<uint8_t>(virtual_addr,byte_data);
+                break;        
+            default://default word 32
+                write<uint32_t>(virtual_addr,data);
+                break;
+        }
+
+    }
+
+    friend class MIPSX_SYSTEM;
 };
 

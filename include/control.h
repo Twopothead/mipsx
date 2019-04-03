@@ -32,7 +32,8 @@ namespace CONTROL{
         uint32_t rs;
         uint32_t rt;
         uint32_t o_pcsrc;
-        uint32_t o_wpcir;        
+        uint32_t o_wpcir;
+        uint32_t o_sl_width_sel;//0b00 32;0b01 16; 0b10 8        
     }CTRL_UNIT;
 
     struct {
@@ -161,6 +162,7 @@ namespace CONTROL{
         CTRL_UNIT.o_wpcir=0b00;
         CTRL_UNIT.o_pcsrc=0b00;
         CTRL_UNIT.o_wpcir=0b00;
+        CTRL_UNIT.o_sl_width_sel = 0b00;
         CTRL_CP0_UNIT.o_cancel = false;
         CTRL_CP0_UNIT.o_isbr = false;
         CTRL_CP0_UNIT.o_ove = false;
@@ -271,6 +273,8 @@ namespace CONTROL{
 
                     case 0b001000:/* jr */
                         CTRL_UNIT.o_pcsrc = 0b10;
+                        
+
                         break;
                     case 0b001001:/* jalr */
                         CTRL_UNIT.o_jal = true;
@@ -287,7 +291,9 @@ namespace CONTROL{
 
                 break;
             case 0b000011:/* jal */
+                CTRL_UNIT.o_pcsrc = 0b11;
                 CTRL_UNIT.o_wreg = true;
+                CTRL_UNIT.o_jal = true;
                 break;
             case 0b100000:/* lb */
                 ALUOP = ALU_ADD;
@@ -296,6 +302,7 @@ namespace CONTROL{
                 CTRL_UNIT.o_aluimm = true;
                 CTRL_UNIT.o_wreg = true;
                 CTRL_UNIT.o_sext = true;
+                CTRL_UNIT.o_sl_width_sel = 0b10;// select byte width 8
                 break;
             case 0b100100:/* lbu */
                 ALUOP = ALU_ADD;
@@ -304,6 +311,7 @@ namespace CONTROL{
                 CTRL_UNIT.o_aluimm = true;
                 CTRL_UNIT.o_wreg = true;
                 CTRL_UNIT.o_sext = true;
+                CTRL_UNIT.o_sl_width_sel = 0b10;// select byte width 8
                 break;
             case 0b100001:/* lh */
                 ALUOP = ALU_ADD;
@@ -312,6 +320,7 @@ namespace CONTROL{
                 CTRL_UNIT.o_aluimm = true;
                 CTRL_UNIT.o_wreg = true;
                 CTRL_UNIT.o_sext = true;
+                CTRL_UNIT.o_sl_width_sel = 0b01;// select half word width 16
                 break;
             case 0b100101:/* lhu */
                 ALUOP = ALU_ADD;
@@ -320,6 +329,7 @@ namespace CONTROL{
                 CTRL_UNIT.o_aluimm = true;
                 CTRL_UNIT.o_wreg = true;
                 CTRL_UNIT.o_sext = true;
+                CTRL_UNIT.o_sl_width_sel = 0b01;// select half word width 16
                 break;
             case 0b100011:/* lw */
                 ALUOP = ALU_ADD;
@@ -333,12 +343,14 @@ namespace CONTROL{
                 CTRL_UNIT.o_aluimm = true;
                 CTRL_UNIT.o_wmem = true;
                 CTRL_UNIT.o_sext = true;
+                CTRL_UNIT.o_sl_width_sel = 0b10;// select byte width 8
                 ALUOP = ALU_ADD;
                 break;
             case 0b101001:/* sh */
                 CTRL_UNIT.o_aluimm = true;
                 CTRL_UNIT.o_wmem = true;
                 CTRL_UNIT.o_sext = true;
+                CTRL_UNIT.o_sl_width_sel = 0b01;// select half word width 16
                 ALUOP = ALU_ADD;
                 break;
             case 0b101011:/* sw */
@@ -414,6 +426,7 @@ namespace CONTROL{
                         CTRL_UNIT.o_regrt = true;
                         CTRL_UNIT.o_aluimm = true;
                         CTRL_UNIT.o_wreg = true;
+                        ALUOP = ALU_AND;
                         break;
                     case 0b001111:/* lui */
                         CTRL_UNIT.o_regrt = true;
@@ -437,7 +450,7 @@ namespace CONTROL{
                         CTRL_UNIT.o_regrt = true;
                         CTRL_UNIT.o_aluimm = true;
                         CTRL_UNIT.o_wreg = true;
-                        ALUOP = ALU_SLT;
+                        ALUOP = ALU_SLTU;
                         break;
                     case 0b001110:/* xori */
                         CTRL_UNIT.o_regrt = true;

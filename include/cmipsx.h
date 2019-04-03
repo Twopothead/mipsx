@@ -11,6 +11,8 @@
 #include "control.h"
 #include "debug.h"
 #include "cp0.h"
+#include "forward.h"
+
 namespace pr = pipeline_registers;
 
 class MIPSX_SYSTEM
@@ -36,6 +38,11 @@ class MIPSX_SYSTEM
         uint32_t pc =  Pre_IF.PC;
         IF_pc = pc;
         IF_ID.IR = memory.read<uint32_t>(pc);
+        // if(IF_ID.IR==0x8d090000)
+        //     while(1){
+        //         ;
+        //     }
+            
         pc4 = pc + 4;
         IF_ID.dpc4 = pc4;
         setPCSRC_MUX(ID_pcsrc,pc4,ID_bpc,ID_da,ID_jpc);
@@ -71,10 +78,13 @@ class MIPSX_SYSTEM
         uint32_t qa,qb;// get
         qa = cpu.gp.register_file[rs];
         qb = cpu.gp.register_file[rt];
+        fwda = ForwardingUnit::calcuforwardA(CTRL_UNIT.rs);
+        fwdb = ForwardingUnit::calcuforwardB(CTRL_UNIT.rt);
         setFWDA_MUX(fwda,qa,EX_ealu,MEM_malu,MEM_mmo);
         da = FWDA_MUX.o_ID_a;
         setFWDB_MUX(fwdb,qb,EX_ealu,MEM_malu,MEM_mmo);
         db = FWDB_MUX.o_ID_b;
+        // x__err("db%x qb%x rt %x %x",db,qb,rt,IF_ID.IR);
 
         ID_rsrt_equ = ((da == db)?true:false);
         CTRL_UNIT.i_rsrtequ = ID_rsrt_equ;
@@ -93,6 +103,7 @@ class MIPSX_SYSTEM
         fwdb = CTRL_UNIT.o_fwdb;
         setREGRT_MUX(regrt,rd,rt);
         drn = REGRT_MUX.o_drn;
+        dsl_width_sel = CTRL_UNIT.o_sl_width_sel;
 
         ID_pcd = IF_ID.PCd;
 
@@ -122,7 +133,7 @@ class MIPSX_SYSTEM
 
         using namespace CrossPipelineWires;
         ID_bpc = bpc;
-        ID_da;
+        ID_da = da;
         ID_jpc = jpc;
         ID_pcsrc = CTRL_UNIT.o_pcsrc;
         ID_wpcir = CTRL_UNIT.o_wpcir;
@@ -132,13 +143,17 @@ class MIPSX_SYSTEM
         ID_EX.em2reg = m2reg;
         ID_EX.ewmem = wmem;
         ID_EX.ejal = jal;
+        ID_EX.epc4 = IF_ID.dpc4;
         ID_EX.ealuc = aluc;
         ID_EX.ealuimm = aluimm;
         ID_EX.eshift = shift;
         ID_EX.ea = da;
         ID_EX.eb = db;
         ID_EX.eimm = dimm;
+        // printf("[%x %x %x %x]forwada %x %x %x %x ",da,db,rs,rt,fwda,qa,EX_ealu,MEM_malu,MEM_mmo);
+        // x__err("ID stage rs%x rt%x %x ",rs,rt,db);
         ID_EX.ern0 = drn;
+        ID_EX.esl_width_sel = dsl_width_sel;
         ID_EX.PCe = IF_ID.PCd;
         printf("ID %08x\t", ID_EX.IR);
         return;
@@ -162,6 +177,7 @@ class MIPSX_SYSTEM
         eALUOp1 = ESHIFT_MUX.o_src1;
         setEALUIMM_MUX(ID_EX.ealuimm,ID_EX.eimm,ID_EX.eb);
         eALUOp2 = EALUIMM_MUX.o_src2;
+        // x__err("EX src1 %x %x %x OP2 %x ", eALUOp1 = ESHIFT_MUX.o_src1,ID_EX.ea,ID_EX.ea,ID_EX.eimm,ID_EX.eb,eALUOp2);//ID_EX.eb
         eALUresult = ALU::ALUOperation(eALUOp1,eALUOp2,ID_EX.ealuc);
         setEJAL_MUX(ID_EX.ejal,epc8,eALUresult);
         ealu = EJAL_MUX.o_ealu;
@@ -170,7 +186,6 @@ class MIPSX_SYSTEM
         else 
             ern = ID_EX.ern0;
         
-
         using namespace CrossPipelineWires;
         EX_ern = ern;
         EX_em2reg = ID_EX.em2reg;
@@ -185,6 +200,7 @@ class MIPSX_SYSTEM
         EX_MEM.malu = ealu;
         EX_MEM.mb = ID_EX.eb;
         EX_MEM.mrn = ern;
+        EX_MEM.msl_width_sel = ID_EX.esl_width_sel;
         EX_MEM.PCm = ID_EX.PCe;
         printf("EX %08x\t", EX_MEM.IR);
         return;
@@ -192,14 +208,7 @@ class MIPSX_SYSTEM
     void MEM(pr::EX_MEM_t &EX_MEM, pr::MEM_WB_t &MEM_WB)
     {
         using namespace MEM_Signals;
-        
-
         // using namespace PipelineStall;
-        // MEM/WB.IR ← EX/MEM.IR;
-        // MEM/WB.ALUOutput ←
-        // EX/MEM.ALUOutput;
-        // if(EX_MEM.mwmem)
-        //     mmo = memory.read<uint32_t>();
         using namespace CrossPipelineWires;
         clear_MEM_temp_signals();
         MEM_mrn = EX_MEM.mrn;
@@ -207,24 +216,41 @@ class MIPSX_SYSTEM
         MEM_mwreg = EX_MEM.mwreg;
         MEM_malu = EX_MEM.malu;
         MEM_pcm = EX_MEM.PCm;
-
-
-        MEM_mmo = mmo;// mmo
         
-        // if(EX_MEM.mwmem)
-        //     x__err("mmo:%x %x",mmo,MEM_mm2reg);
+        storeload_width_sel = EX_MEM.msl_width_sel;
+        using namespace Multiplexer::MEMMUX;
+        setMWIDTH_MUX(storeload_width_sel);
+        storeload_width = MWIDTH_MUX.o_load_store_width;
         bool WriteMem = EX_MEM.mwmem;// if no stall
+        // MemWrite
         if(WriteMem)
-            memory.write<uint32_t>(MEM_malu,EX_MEM.mb);
-
-
+            memory.write_wrapper(MEM_malu,EX_MEM.mb,storeload_width);//memory.write<uint32_t>(MEM_malu,EX_MEM.mb);
+        // MemRead
+        if(EX_MEM.mm2reg){// 若MemtoReg为true,必然要MemRead
+            mmo = memory.read_wrapper(MEM_malu,storeload_width);
+            switch (EX_MEM.msl_width_sel)
+            {
+                case 0b00:// LW 32
+                    mmo = mmo;
+                    break;
+                case 0b01:// LH 16
+                    mmo = DECODE::sign_extend(mmo);
+                    break;
+                case 0b10:// LB 8
+                    mmo = LB::sign_extend8to32(mmo);
+                default:
+                    break;
+            }
+        }
+        MEM_mmo= mmo ;// for forwardA 
         MEM_WB.IR = EX_MEM.IR;
         MEM_WB.wwreg = EX_MEM.mwreg;
         MEM_WB.wm2reg = EX_MEM.mm2reg;
         MEM_WB.wrn = EX_MEM.mrn;
         MEM_WB.walu = EX_MEM.malu;
-        MEM_WB.wmo;
+        MEM_WB.wmo = mmo;
     
+
     MEM_WB.debug_wbPC = EX_MEM.PCm;
         // MEM_WB.ALUOutput = EX_MEM.ALUOutput;
         // bool WriteMem;
@@ -253,6 +279,7 @@ class MIPSX_SYSTEM
         wdi = WM2REG_MUX.o_wdi;
         if(MEM_WB.wwreg)
             Regs[MEM_WB.wrn] = wdi; 
+
         printf("WB %08x\t", MEM_WB.IR);
         return;
     }

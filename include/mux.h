@@ -212,7 +212,35 @@ namespace EXEMUX{
             else
                 EJAL_MUX.o_ealu = EJAL_MUX.eALUresult;
         }
+        
+
     }
+namespace MEMMUX{
+    struct MWIDTH_MUX_t{
+            const uint32_t word_width = 32;  
+            const uint32_t half_word_width = 16;
+            const uint32_t byte_width = 8;
+            uint32_t o_load_store_width = 32;// default initial value = 32
+        }MWIDTH_MUX;
+    void setMWIDTH_MUX(const uint32_t storeload_width_sel){
+            switch (storeload_width_sel)
+            {
+                case 0b00:// word 32
+                    MWIDTH_MUX.o_load_store_width = MWIDTH_MUX.word_width;
+                    break;
+                case 0b01:// half word 16
+                    MWIDTH_MUX.o_load_store_width = MWIDTH_MUX.half_word_width;
+                    break;
+                case 0b10:// byte 8
+                    MWIDTH_MUX.o_load_store_width = MWIDTH_MUX.byte_width;
+                    break;
+                default:// default 32
+                    MWIDTH_MUX.o_load_store_width = MWIDTH_MUX.word_width;
+                    break;
+            }
+
+    }
+}
 namespace WBMUX{
         struct WM2REG_MUX_t{
             uint32_t wmo;

@@ -79,6 +79,7 @@ namespace DECODE
     uint32_t shift_left_2(uint32_t in_26b){
         return (in_26b << 2);
     };
+
     uint32_t calcu_bpc(uint32_t _dpc4,uint32_t _sextended_imm_shift2){// beq or bne
         uint32_t branch_target_address;
         branch_target_address = _dpc4 + _sextended_imm_shift2;
@@ -92,7 +93,20 @@ namespace DECODE
         return jump_target_address;
     }
 }
-
+namespace LB{
+    // for lb: LB rt, offset(base)
+    // The contents of the 8-bit byte at the memory location specified by the effective address are fetched, sign-extended,
+    // and placed in GPR rt.
+    static inline uint32_t _8to32(uint8_t in_8) { return (0x0 | in_8); }
+    uint32_t sign_extend8to32(uint8_t value_8b)
+    {
+        uint16_t mask = 1 << 7;
+        bool sign = (value_8b & mask) ? true : false;
+        uint32_t tmp = _8to32(value_8b);
+        uint32_t extendedValue = (sign) ? (0xffffff00 | tmp) : tmp;
+        return extendedValue;
+    }
+}
 uint32_t DECODE::get_op(uint32_t instruction)
 {
     return Bitwise::extract_hi(6, instruction);

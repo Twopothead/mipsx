@@ -29,6 +29,7 @@ namespace pipeline_registers
         uint32_t eb;
         uint32_t eimm;
         uint32_t ern0;
+        uint32_t esl_width_sel;
         uint32_t PCe;
     } ID_EX;
     struct EX_MEM_t
@@ -40,6 +41,7 @@ namespace pipeline_registers
         uint32_t malu;
         uint32_t mb;
         uint32_t mrn;
+        uint32_t msl_width_sel;
         uint32_t PCm;
     } EX_MEM;
     struct MEM_WB_t
