@@ -2,6 +2,7 @@
 #include <inttypes.h>
 #include <cstring>
 #include "alu.h"
+#include "pipeline_regs.h"
 namespace pipeline_registers
 {
     struct Pre_IF_t{
@@ -30,6 +31,8 @@ namespace pipeline_registers
         uint32_t eimm;
         uint32_t ern0;
         uint32_t esl_width_sel;
+        uint32_t emfc0;
+        uint32_t pipeline_cp0_regs[31];/*注意，这只是pipeling registers里暂存的cp0 regs，不是cp0 regs本身*/
         uint32_t PCe;
     } ID_EX;
     struct EX_MEM_t

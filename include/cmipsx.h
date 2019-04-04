@@ -120,10 +120,24 @@ class MIPSX_SYSTEM
 //         mux2x32 sta_mx (stalr,db,mtc0,sta_in);
 // // mux for status reg
 // mux2x32 cau_mx (cause,db,mtc0,cau_in);
+//CTRL_CP0_UNIT.o_cause,db,CTRL_CP0_UNIT.o_mtc0,cau_in )
 // // mux for cause reg
 // mux2x32 epc_mx (epcin,db,mtc0,epc_in);
 // // mux for epc reg
         cp0_operations(db);
+        // if(CTRL_CP0_UNIT.o_mfc0!=0){
+        //     x__err("mfc0 %x",CTRL_CP0_UNIT.o_mfc0);
+        //     // R3000_CP0::cp0_regs.SR.raw =0xcafebabe;
+        //     // R3000_CP0::dump_cp0_regs();
+        // }
+            
+
+        ID_EX.pipeline_cp0_regs[12] = R3000_CP0::cp0_regs.SR.raw;// sta
+        ID_EX.pipeline_cp0_regs[13] = R3000_CP0::cp0_regs.CAUSE.raw;// cau
+        ID_EX.pipeline_cp0_regs[14] = R3000_CP0::cp0_regs.EPC;// epc
+        if(CTRL_CP0_UNIT.o_mfc0)
+            ID_EX.pipeline_cp0_regs[rd] = R3000_CP0::cp0_regs.val[rd];//节省时间，不全拷，只拷用到的
+
         // if(CTRL_CP0_UNIT.o_mtc0){
         //     R3000_CP0::dump_cp0_regs();
         //     x__err("iscache %x ",R3000_CP0::cp0_regs.SR.IsC);
@@ -150,6 +164,7 @@ class MIPSX_SYSTEM
         ID_EX.ea = da;
         ID_EX.eb = db;
         ID_EX.eimm = dimm;
+        ID_EX.emfc0 = CTRL_CP0_UNIT.o_mfc0;
         // printf("[%x %x %x %x]forwada %x %x %x %x ",da,db,rs,rt,fwda,qa,EX_ealu,MEM_malu,MEM_mmo);
         // x__err("ID stage rs%x rt%x %x ",rs,rt,db);
         ID_EX.ern0 = drn;
@@ -179,8 +194,24 @@ class MIPSX_SYSTEM
         eALUOp2 = EALUIMM_MUX.o_src2;
         // x__err("EX src1 %x %x %x OP2 %x ", eALUOp1 = ESHIFT_MUX.o_src1,ID_EX.ea,ID_EX.ea,ID_EX.eimm,ID_EX.eb,eALUOp2);//ID_EX.eb
         eALUresult = ALU::ALUOperation(eALUOp1,eALUOp2,ID_EX.ealuc);
-        setEJAL_MUX(ID_EX.ejal,epc8,eALUresult);
+
+        //ID_EX.pipeline_cp0_regs[]
+        // pc8c0r mux
+        //ID_EX.emfc0;
+        // ID_EX.pipeline_cp0_regs
+        setEPC8_Cp0r_MUX(ID_EX.emfc0,epc8,
+            ID_EX.pipeline_cp0_regs[12],// sta
+            ID_EX.pipeline_cp0_regs[13],// cau
+            ID_EX.pipeline_cp0_regs[14],// epc
+            ID_EX.pipeline_cp0_regs);
+        pc8c0r = EPC8_Cp0r_MUX.o_pc8c0r_in;
+ 
+
+        setEJALmfc0_MUX( (ID_EX.ejal) or (ID_EX.emfc0),
+            pc8c0r,eALUresult);
         ealu = EJAL_MUX.o_ealu;
+
+
         if(ID_EX.ejal)
             ern = ID_EX.ern0 | 0b11111;//jal $31
         else 

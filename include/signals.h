@@ -60,8 +60,11 @@ namespace EXE_Signals
     uint32_t eALUresult;
     uint32_t ealu;
     uint32_t ern;
+    uint32_t pc8c0r;
+
     void clear_ex_temp_signals(){
         epc8 = 0,sa = 0,eALUOp1 = 0,eALUOp2 = 0,eALUresult = 0,ealu = 0,ern =0;
+        pc8c0r = 0;
     }
 } 
 

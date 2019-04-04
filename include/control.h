@@ -48,6 +48,7 @@ namespace CONTROL{
         bool o_wepc;/* cp0 reg 14 */
         uint32_t o_wcp0_regs_sel;/*选择　写信号*/
         bool o_mtc0;
+        uint32_t o_mfc0;
         uint32_t o_cause;
         uint32_t o_sepc;
         bool o_exc;
@@ -104,6 +105,31 @@ namespace CONTROL{
         }
         
     }
+    void cp0_mfc0_ctrl(){
+        // rt ← CPR[0,rd,sel]
+        switch (CTRL_CP0_UNIT.rd)
+        {
+                case 12:// cp0 r12 status_reg
+                    CTRL_CP0_UNIT.o_mfc0 = 12;
+                    break;
+                case 13:// cp0 r13 cause_reg
+                    CTRL_CP0_UNIT.o_mfc0 = 13;
+                    break;
+                case 14:// cp0 r14 Exception Program Counter
+                    CTRL_CP0_UNIT.o_mfc0 = 14;
+                case 15 ... 31:
+                    CTRL_CP0_UNIT.o_mfc0 = CTRL_CP0_UNIT.rd | 0xffff0000;
+                    /* 为防止出现默认的0,这里我把高16位置1,最后选寄存器时再&回来，我们只用到它的最低5位来选cp0 regs */
+                    break;
+                case 0 ... 11:
+                    CTRL_CP0_UNIT.o_mfc0 = CTRL_CP0_UNIT.rd | 0xffff0000;
+                    /* 为防止出现默认的0,这里我把高16位置1,最后选寄存器时再&回来，我们只用到它的最低5位来选cp0 regs */
+                    break;
+                default:
+                    break;
+        }
+        
+    }
     void cp0_ctrl(){
         using namespace DECODE;
         CTRL_CP0_UNIT.rd = get_rd(CTRL_CP0_UNIT.cop0_ins);
@@ -114,7 +140,9 @@ namespace CONTROL{
         switch (MTMF_rs)
         {
             case 0b00000:/* MF mfc0 */
-                // TODO
+                CTRL_UNIT.o_regrt = true;
+                CTRL_UNIT.o_wreg = true;
+                cp0_mfc0_ctrl();
                 break;
             case 0b00100:/* MT mtc0 */
                 CTRL_CP0_UNIT.o_mtc0 = true;
@@ -126,7 +154,7 @@ namespace CONTROL{
         // x__err("%x %x",CTRL_CP0_UNIT.rt,CTRL_CP0_UNIT.rd);
         
     }
-    void cp0_operations(uint32_t writeData){
+    void cp0_operations(uint32_t writeData){//ID stage
         // CPR[0, rd, sel] ← rt
         if(CTRL_CP0_UNIT.o_mtc0){
             if(CTRL_CP0_UNIT.o_wsta){
@@ -145,9 +173,9 @@ namespace CONTROL{
             rd_sel &= 0b11111;//32 cp0 regs
             R3000_CP0::cp0_regs.val[rd_sel] = writeData;// CPR[0, rd, sel] ← rt
         }
-
         
     }
+    // rt ← CPR[0,rd,sel]
 
     void clear_ctrl(){
         CTRL_UNIT.o_wreg=false;
@@ -160,8 +188,6 @@ namespace CONTROL{
         CTRL_UNIT.o_sext=false;
         CTRL_UNIT.o_pcsrc=0b00;
         CTRL_UNIT.o_wpcir=0b00;
-        CTRL_UNIT.o_pcsrc=0b00;
-        CTRL_UNIT.o_wpcir=0b00;
         CTRL_UNIT.o_sl_width_sel = 0b00;
         CTRL_CP0_UNIT.o_cancel = false;
         CTRL_CP0_UNIT.o_isbr = false;
@@ -171,6 +197,7 @@ namespace CONTROL{
         CTRL_CP0_UNIT.o_wepc = false;
         CTRL_CP0_UNIT.o_wcp0_regs_sel = 0x0;
         CTRL_CP0_UNIT.o_mtc0 = false;
+        CTRL_CP0_UNIT.o_mfc0 = 0x0;
         CTRL_CP0_UNIT.o_cause = 0x0;
         CTRL_CP0_UNIT.o_sepc = 0;
         CTRL_CP0_UNIT.o_exc = false;

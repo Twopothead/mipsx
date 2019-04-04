@@ -199,19 +199,60 @@ namespace EXEMUX{
                     EALUIMM_MUX.o_src2 = EALUIMM_MUX.eb;
         }
         struct EJAL_MUX_t{
-            uint32_t epc8;
+            uint32_t pc8c0r;
             uint32_t eALUresult;
             uint32_t o_ealu;
         }EJAL_MUX;
-        void setEJAL_MUX(const bool sel_ejal,
-            uint32_t &epc8,uint32_t &eALUresult){
-            EJAL_MUX.epc8 = epc8;
+        void setEJALmfc0_MUX(const bool sel_ejalorMFC0,
+            uint32_t &pc8c0r,uint32_t &eALUresult){
+            EJAL_MUX.pc8c0r = pc8c0r;
             EJAL_MUX.eALUresult = eALUresult;   
-            if(sel_ejal)
-                EJAL_MUX.o_ealu = EJAL_MUX.epc8;
+            if(sel_ejalorMFC0)
+                EJAL_MUX.o_ealu = EJAL_MUX.pc8c0r;
             else
                 EJAL_MUX.o_ealu = EJAL_MUX.eALUresult;
         }
+
+        struct EPC8_Cp0r_MUX_t{
+            uint32_t epc8;// pc plus 8 in EX stage
+            uint32_t sta;//cp0 r12
+            uint32_t cau;//cp0 r13
+            uint32_t epc;//cp0 r14 exception pc
+            // considering taking up too much space,pipeline cp0 regs are not list here
+            uint32_t o_pc8c0r_in;
+        }EPC8_Cp0r_MUX;
+        void setEPC8_Cp0r_MUX(const uint32_t mfc0_sel,
+            uint32_t epc8,uint32_t &sta,uint32_t &cau,uint32_t &epc,uint32_t * pipeline_cp0_regs){
+            EPC8_Cp0r_MUX.epc8 =  epc8;
+
+            EPC8_Cp0r_MUX.sta = sta;
+            EPC8_Cp0r_MUX.cau = cau;
+            EPC8_Cp0r_MUX.epc = epc;
+            // considering taking up too much space,ID_EX pipeline cp0 regs are not list here
+            switch (mfc0_sel)
+            {
+                case 0:
+                    EPC8_Cp0r_MUX.o_pc8c0r_in = EPC8_Cp0r_MUX.epc8;// pc plus 8 in EX stage
+                    break;
+                case 12:
+                    EPC8_Cp0r_MUX.o_pc8c0r_in = EPC8_Cp0r_MUX.sta;
+                    break;
+                case 13:
+                    EPC8_Cp0r_MUX.o_pc8c0r_in = EPC8_Cp0r_MUX.cau;
+                    break;
+                case 14:
+                    EPC8_Cp0r_MUX.o_pc8c0r_in = EPC8_Cp0r_MUX.epc;
+                    break;
+                case 0xffff0000 ... 0xffff001f:
+                    EPC8_Cp0r_MUX.o_pc8c0r_in = pipeline_cp0_regs[mfc0_sel & 0b11111];// 0 to 31
+                default:
+                    break;
+            }
+
+        }
+
+
+        
         
 
     }

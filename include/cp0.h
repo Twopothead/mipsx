@@ -157,8 +157,8 @@ namespace R3000_CP0{
         uint32_t   padding[15];// (0-15=>15)
         };
         uint32_t val[32];
-    }R3000_CP0_Registers;// type
-    R3000_CP0_Registers cp0_regs;// instance
+    }R3000_CP0_Registers_t;// type
+    R3000_CP0_Registers_t cp0_regs;// instance
     void dump_cp0_regs(){
         // 这个地方不要忘了.raw
         // x__log("--------------CP0 registers--------------");

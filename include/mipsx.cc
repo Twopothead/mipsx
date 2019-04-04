@@ -36,11 +36,12 @@ int main()
     // 17352 从T=1555到T=17354,一直在循环,这里终于到达0xbfc003cc
     // 17367 SPU addr: 0x1f801d80 instruction:0xa5200180
     // [017372] WB 0ff00698
+    // 17389处用到17374时sw写入的数据
+    // 17766 0x40026000 mfc0 $2 , $cop012 [017763] 0xbfc03968 0x40026000 v0由 0xa000b068 变为 0x00000000
     MIPSX_SYSTEM psx;
     Monitor monitor(psx);
-    for (int i = 0; i <=17390; i++)
-    {//17389
-    //17374+3
+    for (int i = 0; i <=17766; i++)
+    {
         printf("[%06d]\t",i-3);
         psx.tick();
         // if(i>=4){
@@ -48,6 +49,7 @@ int main()
         // }
     }
     monitor.showStatus();
+    // printf("\n");
     // R3000_CP0::dump_cp0_regs();
     return 0;
 }

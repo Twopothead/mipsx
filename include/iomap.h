@@ -207,9 +207,12 @@ uint32_t io_read(uint32_t vaddr,int width){
             case 0x1f801810 ... 0x1f801810:
                 data = GPU_Registers::read(vaddr,width);
                 break;
-            case 0x1f802041 ... 0x1f802042:
-                ;//ignore Expansion Region 2 - Int/Dip/Post
-                break;
+            // case 0x1f802041 ... 0x1f802042:
+            //     ;//ignore Expansion Region 2 - Int/Dip/Post
+            //     break;
+            case 0x1f802000 ... 0x1f802fff:// expansion region 2
+                x__log("Read expansion region 2");
+                return 0xcafebabe;
             case 0x1f801d80 ... 0x1f801dbc:
                 data = SPU_Control_Registers::read(vaddr,width);
                 break;

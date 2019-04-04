@@ -58,6 +58,13 @@ class PlayStationMemory
         case 0x1ffe0130:
             pointer = (T *)&CacheCtrl;
             break;
+        case 0x1f000000 ... 0x1f7fffff:// expansion region 1
+            x__log("Read expansion region 1");
+            return (T)0xffffffff;// it seems to be full-ones
+
+        case 0x1fa00000 ... 0x1fbfffff:// expansion region 3
+            x__log("Read expansion region 3");
+            return (T)0xcafebabe;
         default:
             x__err("read error: normalizedAddress:%x",normalizedAddress);
             break;
