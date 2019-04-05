@@ -314,11 +314,12 @@ namespace CONTROL{
 
                         break;
                     case 0b001001:/* jalr */
+                        // x__err("jalr");
                         CTRL_UNIT.o_jal = false;/*不变成31.而是直接rd*/
                         CTRL_UNIT.o_link = true;
                         CTRL_UNIT.o_wreg = true;
                         CTRL_UNIT.o_regrt = false;
-                        CTRL_UNIT.o_pcsrc = 0b11;
+                        CTRL_UNIT.o_pcsrc = 0b10;
                         break;                
                         default:
                             break;
@@ -327,7 +328,6 @@ namespace CONTROL{
 
             case 0b000010:/* j */
                 CTRL_UNIT.o_pcsrc = 0b11;
-
                 break;
             case 0b000011:/* jal */
                 CTRL_UNIT.o_pcsrc = 0b11;
@@ -417,7 +417,7 @@ namespace CONTROL{
             case 0b000101:/* bne */
                 CTRL_UNIT.o_sext = true;
                 if(!CTRL_UNIT.i_rsrtequ)
-                    CTRL_UNIT.o_pcsrc = 0b01;//;0b01;
+                    CTRL_UNIT.o_pcsrc = 0b01;
                 break;
             case 0b000001:/* Zero-relative branches */
                 switch (CTRL_UNIT.rt)//sign_extend(offset || 0 2 )

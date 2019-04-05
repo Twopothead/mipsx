@@ -67,7 +67,7 @@ class PlayStationMemory
             x__log("Read expansion region 3");
             return (T)0xcafebabe;
         default:
-            x__err("read error: normalizedAddress:%x",normalizedAddress);
+            x__err("read error: normalizedAddress:%x,virtual addr %x",normalizedAddress,virtual_addr);
             break;
         }
         return *pointer;

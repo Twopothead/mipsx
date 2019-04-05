@@ -43,6 +43,7 @@ class MIPSX_SYSTEM
         IF_ID.dpc4 = pc4;
         setPCSRC_MUX(ID_pcsrc,pc4,ID_bpc,ID_da,ID_jpc);
         npc = PCSRC_MUX.o_npc;
+        // x__err("pcsrc%x pc4%x IDbpc%x da%x jpc%x",ID_pcsrc,pc4,ID_bpc,ID_da,ID_jpc)
         IF_npc = npc;
         IF_ID.PCd = pc;
         if(show_stage_log)
@@ -119,8 +120,12 @@ class MIPSX_SYSTEM
         bpc = calcu_bpc(dpc4,shift_left_2(dimm));
         jpc = calcu_jpc(dpc4,addr);
 
-        // if(IF_ID.IR ==0x1ca00003)
-        //     x__err("%x %x",CTRL_UNIT.i_rsGTZ,bpc);
+        // if(IF_ID.IR ==0x28810010)
+        //     while(1){
+        //         ;
+        //     }
+            
+        //     x__err("");
         
         ID_CP0_M::setSEPC_MUX(CTRL_CP0_UNIT.o_sepc,IF_pc,ID_pcd,EX_pce,MEM_pcm);
         cp0_epcin = ID_CP0_M::SEPC_MUX.o_epcin;
@@ -273,14 +278,17 @@ class MIPSX_SYSTEM
         storeload_width = MWIDTH_MUX.o_load_store_width;
         bool WriteMem = EX_MEM.mwmem;// if no stall
         // MemWrite
-        // x__err("fuck mem:%x",EX_MEM.IR);
+        // x__err("fuck mem:%x,alu%x,mb%x",EX_MEM.IR,MEM_malu,EX_MEM.mb);
         // if(WriteMem)
         //     x__err("%x",MEM_malu);
+
 
         if(WriteMem)
             memory.write_wrapper(MEM_malu,EX_MEM.mb,storeload_width);//memory.write<uint32_t>(MEM_malu,EX_MEM.mb);
         // MemRead
         if(EX_MEM.mm2reg){// 若MemtoReg为true,必然要MemRead
+            // x__err("%x %x",MEM_malu,storeload_width);
+            // printf("MEM_malu%x",MEM_malu);
             mmo = memory.read_wrapper(MEM_malu,storeload_width);
             switch (EX_MEM.msl_width_sel)
             {
