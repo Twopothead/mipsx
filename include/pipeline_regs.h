@@ -22,6 +22,9 @@ namespace pipeline_registers
         bool em2reg;
         bool ewmem;
         bool ejal;
+        bool elink;
+        bool elbu;
+        bool elhu;
         ALUOP_t ealuc;
         bool ealuimm;
         bool eshift;
@@ -45,6 +48,8 @@ namespace pipeline_registers
         uint32_t mb;
         uint32_t mrn;
         uint32_t msl_width_sel;
+        bool mlbu;
+        bool mlhu;
         uint32_t PCm;
     } EX_MEM;
     struct MEM_WB_t

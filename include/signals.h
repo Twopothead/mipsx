@@ -18,6 +18,9 @@ namespace ID_Signals
     bool m2reg;
     bool wmem;
     bool jal;
+    bool link;
+    bool lbu;
+    bool lhu;
     ALUOP_t aluc;
     bool aluimm;
     bool shift;

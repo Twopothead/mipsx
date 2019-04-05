@@ -198,19 +198,19 @@ namespace EXEMUX{
                 else
                     EALUIMM_MUX.o_src2 = EALUIMM_MUX.eb;
         }
-        struct EJAL_MUX_t{
+        struct ELinkmfc0_MUX_t{
             uint32_t pc8c0r;
             uint32_t eALUresult;
             uint32_t o_ealu;
-        }EJAL_MUX;
-        void setEJALmfc0_MUX(const bool sel_ejalorMFC0,
+        }ELinkmfc0_MUX;
+        void setELinkmfc0_MUX(const bool sel_elinkorMFC0,
             uint32_t &pc8c0r,uint32_t &eALUresult){
-            EJAL_MUX.pc8c0r = pc8c0r;
-            EJAL_MUX.eALUresult = eALUresult;   
-            if(sel_ejalorMFC0)
-                EJAL_MUX.o_ealu = EJAL_MUX.pc8c0r;
+            ELinkmfc0_MUX.pc8c0r = pc8c0r;
+            ELinkmfc0_MUX.eALUresult = eALUresult;   
+            if(sel_elinkorMFC0)
+                ELinkmfc0_MUX.o_ealu = ELinkmfc0_MUX.pc8c0r;
             else
-                EJAL_MUX.o_ealu = EJAL_MUX.eALUresult;
+                ELinkmfc0_MUX.o_ealu = ELinkmfc0_MUX.eALUresult;
         }
 
         struct EPC8_Cp0r_MUX_t{

@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "iomap.h"
+#include "debug.h"
+#include "cp0.h"
 namespace BIOS
 {
     void load_ROM(uint8_t *rom_p, const char *psx_bios_path)
@@ -18,7 +20,7 @@ namespace BIOS
 } 
 
 
-
+int fffffuck=4;
 class PlayStationMemory
 {
 
@@ -53,7 +55,7 @@ class PlayStationMemory
             pointer = (T *)&bios_Rom[normalizedAddress - 0x1fc00000];
             break;
         case 0x1f800000 ... 0x1f80fffc:
-                return io_read( virtual_addr,sizeof(T)*8 );//return IO_Map::io_read(normalizedAddress - 0x1f800000,32);   // pointer = (T*)&ioports[normalizedAddress - 0x1f800000];
+                return io_read( virtual_addr,sizeof(T)<<3 );//return IO_Map::io_read(normalizedAddress - 0x1f800000,32);   // pointer = (T*)&ioports[normalizedAddress - 0x1f800000];
                 // do not use pointer here
         case 0x1ffe0130:
             pointer = (T *)&CacheCtrl;
@@ -89,11 +91,33 @@ class PlayStationMemory
         }
 
     }
+
+// IsC
+// Isolate Cache. If this bit is set, the data cache is “isolated” from main memory; that is, store operations
+// modify the data cache but do not cause a main memory write to occur, and load operations return the data value
+// from the cache whether or not a cache hit occurred. This bit is also useful in various operations such as flushing.
     template <typename T>
     void write(uint32_t virtual_addr, T data)
     {
         uint32_t normalizedAddress = virtual_addr & 0x1fffffff;
         T *pointer = nullptr;
+
+        if(R3000_CP0::cp0_regs.SR.IsC==1){
+            // x__err("cp0 Isolate Cache, ignore write to main memory");
+            return;
+        }
+            
+        // if(normalizedAddress==0x000000b0)
+        //     if(!fffffuck--){
+        //         x__err("virtual_addr%x data:%x",virtual_addr,data);
+        //         while(1){
+        //             ;
+        //         }
+                
+        //     }
+                // printf("ddddddddddddd:%x\n",*(uint32_t*)&real_main_Ram[0xb0]);
+
+            
         switch (normalizedAddress)
         {
         case 0x00000000 ... 0x007ffffc:
@@ -102,7 +126,7 @@ class PlayStationMemory
         case 0x1fc00000 ... 0x1fc7fffc:
             break;// ignore write to BIOS
         case 0x1f800000 ... 0x1f80fffc:
-            io_write(virtual_addr,data,sizeof(T)*8);// normalizedAddress - 0x1f800000
+            io_write(virtual_addr,data,sizeof(T)<<3);// normalizedAddress - 0x1f800000
             //pointer = (T*)&ioports[normalizedAddress - 0x1f800000];
                 return;// do not use pointer here
         case 0x1ffe0130:
@@ -114,6 +138,8 @@ class PlayStationMemory
         }
 
         *pointer = data;
+        // printf("%x %x eeeeeeeeeeee:%x\n",normalizedAddress & ~0x00600000,data,*(uint32_t*)&real_main_Ram[0xb0]);
+        
         return;
     }
     void write_wrapper(uint32_t virtual_addr,uint32_t data,uint32_t width){

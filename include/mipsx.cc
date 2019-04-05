@@ -38,17 +38,38 @@ int main()
     // [017372] WB 0ff00698
     // 17389处用到17374时sw写入的数据
     // 17766 0x40026000 mfc0 $2 , $cop012 [017763] 0xbfc03968 0x40026000 v0由 0xa000b068 变为 0x00000000
+    // 121244 [121244] 0xbfc01ad4 0x1ca00003 bgtz $5 , +12
+    // 17772
+    // 50000 OK
+    // 从80890 开始出错
+    // bgtz要在ID阶段就算出来
+    // 死在79218 0xacc7fffc sw，要往0xb0写入 data:3c080000
+    // 079473时再写入0,其实这地方不应该写0 [079473] 0xbfc01968 WB ad400020 0xad400020 [  ERR ]  virtual_addrb0 data:0
+    // ad400030
+    // 有可能因为没用Cache,理论上是根本没写入memory
+    // 可能是memorymap的原因 cop12 status有问题
+    // the $12 register contains 0x00010000 so this MTC0 instruction
+     // sets bit 16 of SR which is the “isolate cache” bit. It makes all the following read
+    // and write target directly the cache instead of going through it towards the main
+     //memory.
     MIPSX_SYSTEM psx;
     Monitor monitor(psx);
-    for (int i = 0; i <=17766; i++)
+    int i=0;
+    for(int i=-3;i<=80895;i++)
     {
-        printf("[%06d]\t",i-3);
+        if(i>0)
+            printf("[%06d] ",i);
         psx.tick();
-        // if(i>=4){
-        //     monitor.showStatus();
-        // }
     }
-    monitor.showStatus();
+    // for (int i = 0; i <=50003; i++)
+    // {//177110
+    //     printf("[%06d]\t",i-3);
+    //     psx.tick();
+    //     // if(i>=4){
+    //     //     monitor.showStatus();
+    //     // }
+    // }
+    // monitor.showStatus();
     // printf("\n");
     // R3000_CP0::dump_cp0_regs();
     return 0;

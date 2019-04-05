@@ -28,6 +28,8 @@ typedef union {
 class R3000A_CPU
 {
     R3000A_General_Purpose_Registers gp;
+    uint32_t HI = 0xcafebabe;
+    uint32_t LO = 0xdeadbeef;
     public:
         R3000A_CPU(){
             memset(&gp.register_file,0,sizeof(uint32_t[32]));

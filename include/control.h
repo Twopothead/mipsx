@@ -19,11 +19,16 @@ namespace CONTROL{
         bool o_m2reg;
         bool o_wmem;
         bool o_jal;
+        bool o_link;
         ALUOP_t  o_aluc;
         bool o_aluimm;
         bool o_shift;
         bool o_regrt;
         bool i_rsrtequ;
+        bool i_rsGEZ;// if rs ≥ 0 then branch
+        bool i_rsLTZ;// if rs < 0 then procedure_call
+        bool i_rsLEZ;// if rs ≤ 0 then branch
+        bool i_rsGTZ;// if rs > 0 then branch
         bool o_sext;
         uint32_t o_fwda;
         uint32_t o_fwdb;
@@ -33,7 +38,9 @@ namespace CONTROL{
         uint32_t rt;
         uint32_t o_pcsrc;
         uint32_t o_wpcir;
-        uint32_t o_sl_width_sel;//0b00 32;0b01 16; 0b10 8        
+        uint32_t o_sl_width_sel;//0b00 32;0b01 16; 0b10 8
+        bool o_lbu;/*lbu取出来的8bit数要zero-extend(而lb是8bit signextend到32bit)*/
+        bool o_lhu;        
     }CTRL_UNIT;
 
     struct {
@@ -182,6 +189,7 @@ namespace CONTROL{
         CTRL_UNIT.o_m2reg=false;
         CTRL_UNIT.o_wmem=false;
         CTRL_UNIT.o_jal=false;
+        CTRL_UNIT.o_link=false;
         CTRL_UNIT.o_aluimm=false;
         CTRL_UNIT.o_shift=false;
         CTRL_UNIT.o_regrt=false;
@@ -189,6 +197,8 @@ namespace CONTROL{
         CTRL_UNIT.o_pcsrc=0b00;
         CTRL_UNIT.o_wpcir=0b00;
         CTRL_UNIT.o_sl_width_sel = 0b00;
+        CTRL_UNIT.o_lbu = false;
+        CTRL_UNIT.o_lhu = false;
         CTRL_CP0_UNIT.o_cancel = false;
         CTRL_CP0_UNIT.o_isbr = false;
         CTRL_CP0_UNIT.o_ove = false;
@@ -304,8 +314,10 @@ namespace CONTROL{
 
                         break;
                     case 0b001001:/* jalr */
-                        CTRL_UNIT.o_jal = true;
+                        CTRL_UNIT.o_jal = false;/*不变成31.而是直接rd*/
+                        CTRL_UNIT.o_link = true;
                         CTRL_UNIT.o_wreg = true;
+                        CTRL_UNIT.o_regrt = false;
                         CTRL_UNIT.o_pcsrc = 0b11;
                         break;                
                         default:
@@ -321,6 +333,7 @@ namespace CONTROL{
                 CTRL_UNIT.o_pcsrc = 0b11;
                 CTRL_UNIT.o_wreg = true;
                 CTRL_UNIT.o_jal = true;
+                CTRL_UNIT.o_link = true;
                 break;
             case 0b100000:/* lb */
                 ALUOP = ALU_ADD;
@@ -337,7 +350,8 @@ namespace CONTROL{
                 CTRL_UNIT.o_m2reg = true;
                 CTRL_UNIT.o_aluimm = true;
                 CTRL_UNIT.o_wreg = true;
-                CTRL_UNIT.o_sext = true;
+                CTRL_UNIT.o_sext = true;/*地址还是要signextend的，但取出来的八bit位是zero-extend*/
+                CTRL_UNIT.o_lbu = true;/* 控制the fetched value 是 zero-extend */
                 CTRL_UNIT.o_sl_width_sel = 0b10;// select byte width 8
                 break;
             case 0b100001:/* lh */
@@ -355,7 +369,8 @@ namespace CONTROL{
                 CTRL_UNIT.o_m2reg = true;
                 CTRL_UNIT.o_aluimm = true;
                 CTRL_UNIT.o_wreg = true;
-                CTRL_UNIT.o_sext = true;
+                CTRL_UNIT.o_sext = true;/* 保留 */
+                CTRL_UNIT.o_lhu = true;/* 控制the fetched value 是 zero-extend */
                 CTRL_UNIT.o_sl_width_sel = 0b01;// select half word width 16
                 break;
             case 0b100011:/* lw */
@@ -405,29 +420,47 @@ namespace CONTROL{
                     CTRL_UNIT.o_pcsrc = 0b01;//;0b01;
                 break;
             case 0b000001:/* Zero-relative branches */
-                switch (CTRL_UNIT.rt)
-                {
+                switch (CTRL_UNIT.rt)//sign_extend(offset || 0 2 )
+                {// the six MSBs are 0b000001 which can encode four different instructions:
                     case 0b00000:/* bltz */
+                        CTRL_UNIT.o_sext = true;
                         ALUOP = ALU_LTZ;
                         break;
                     case 0b10000:/* bltzal */
-                        ALUOP = ALU_LTZ;
+                        CTRL_UNIT.o_sext = true;
+                        CTRL_UNIT.o_wreg = true;/* and link */
+                        if(!CTRL_UNIT.i_rsLTZ)
+                            CTRL_UNIT.o_pcsrc = 0b01;
+                        // ALUOP = ALU_LTZ;// Branch on Less Than Zero and Link
                         break;
                     case 0b00001:/* bgez */
-                        ALUOP = ALU_GEZ;
+                        CTRL_UNIT.o_sext = true;
+                        if(!CTRL_UNIT.i_rsGEZ)
+                            CTRL_UNIT.o_pcsrc = 0b01;
+                        // ALUOP = ALU_GEZ;
                         break;
                     case 0b10001:/* bgezal */
-                        ALUOP = ALU_GEZ;
+                        CTRL_UNIT.o_sext = true;
+                        CTRL_UNIT.o_wreg = true;/* and link */
+                        if(!CTRL_UNIT.i_rsGEZ)
+                            CTRL_UNIT.o_pcsrc = 0b01;
+                        // ALUOP = ALU_GEZ;
                         break;
                     default:
                         break;
                 }
                 break;
             case 0b000111:/* bgtz */
-                ALUOP = ALU_GTZ;
+                CTRL_UNIT.o_sext = true;
+                if(!CTRL_UNIT.i_rsGTZ)
+                    CTRL_UNIT.o_pcsrc = 0b01;
+                // ALUOP = ALU_GTZ;
                 break;
             case 0b000110:/* blez */
-                ALUOP = ALU_LEZ;
+                CTRL_UNIT.o_sext = true;
+                if(!CTRL_UNIT.i_rsLEZ)
+                    CTRL_UNIT.o_pcsrc = 0b01;
+                // ALUOP = ALU_LEZ;
                 break;
 
 
@@ -468,6 +501,7 @@ namespace CONTROL{
                         ALUOP = ALU_OR;
                         break;
                     case 0b001010:/* slti */
+                        CTRL_UNIT.o_sext = true;// Compare the contents of GPR rs and the 16-bit signed immediate as signed integers
                         CTRL_UNIT.o_regrt = true;
                         CTRL_UNIT.o_aluimm = true;
                         CTRL_UNIT.o_wreg = true;
