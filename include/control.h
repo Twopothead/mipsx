@@ -424,27 +424,25 @@ namespace CONTROL{
                 {// the six MSBs are 0b000001 which can encode four different instructions:
                     case 0b00000:/* bltz */
                         CTRL_UNIT.o_sext = true;
-                        ALUOP = ALU_LTZ;
+                        if(CTRL_UNIT.i_rsLTZ)
+                            CTRL_UNIT.o_pcsrc = 0b01;                        
                         break;
                     case 0b10000:/* bltzal */
                         CTRL_UNIT.o_sext = true;
                         CTRL_UNIT.o_wreg = true;/* and link */
-                        if(!CTRL_UNIT.i_rsLTZ)
+                        if(CTRL_UNIT.i_rsLTZ)
                             CTRL_UNIT.o_pcsrc = 0b01;
-                        // ALUOP = ALU_LTZ;// Branch on Less Than Zero and Link
                         break;
                     case 0b00001:/* bgez */
                         CTRL_UNIT.o_sext = true;
-                        if(!CTRL_UNIT.i_rsGEZ)
+                        if(CTRL_UNIT.i_rsGEZ)
                             CTRL_UNIT.o_pcsrc = 0b01;
-                        // ALUOP = ALU_GEZ;
                         break;
                     case 0b10001:/* bgezal */
                         CTRL_UNIT.o_sext = true;
                         CTRL_UNIT.o_wreg = true;/* and link */
-                        if(!CTRL_UNIT.i_rsGEZ)
+                        if(CTRL_UNIT.i_rsGEZ)
                             CTRL_UNIT.o_pcsrc = 0b01;
-                        // ALUOP = ALU_GEZ;
                         break;
                     default:
                         break;
@@ -452,15 +450,13 @@ namespace CONTROL{
                 break;
             case 0b000111:/* bgtz */
                 CTRL_UNIT.o_sext = true;
-                if(!CTRL_UNIT.i_rsGTZ)
+                if(CTRL_UNIT.i_rsGTZ)
                     CTRL_UNIT.o_pcsrc = 0b01;
-                // ALUOP = ALU_GTZ;
                 break;
             case 0b000110:/* blez */
                 CTRL_UNIT.o_sext = true;
-                if(!CTRL_UNIT.i_rsLEZ)
+                if(CTRL_UNIT.i_rsLEZ)
                     CTRL_UNIT.o_pcsrc = 0b01;
-                // ALUOP = ALU_LEZ;
                 break;
 
 

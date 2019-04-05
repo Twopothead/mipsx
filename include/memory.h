@@ -20,7 +20,6 @@ namespace BIOS
 } 
 
 
-int fffffuck=4;
 class PlayStationMemory
 {
 
@@ -105,19 +104,7 @@ class PlayStationMemory
         if(R3000_CP0::cp0_regs.SR.IsC==1){
             // x__err("cp0 Isolate Cache, ignore write to main memory");
             return;
-        }
-            
-        // if(normalizedAddress==0x000000b0)
-        //     if(!fffffuck--){
-        //         x__err("virtual_addr%x data:%x",virtual_addr,data);
-        //         while(1){
-        //             ;
-        //         }
-                
-        //     }
-                // printf("ddddddddddddd:%x\n",*(uint32_t*)&real_main_Ram[0xb0]);
-
-            
+        }            
         switch (normalizedAddress)
         {
         case 0x00000000 ... 0x007ffffc:
@@ -138,8 +125,6 @@ class PlayStationMemory
         }
 
         *pointer = data;
-        // printf("%x %x eeeeeeeeeeee:%x\n",normalizedAddress & ~0x00600000,data,*(uint32_t*)&real_main_Ram[0xb0]);
-        
         return;
     }
     void write_wrapper(uint32_t virtual_addr,uint32_t data,uint32_t width){

@@ -38,12 +38,7 @@ class MIPSX_SYSTEM
         clear_temp_IF_signals();
         uint32_t pc =  Pre_IF.PC;
         IF_pc = pc;
-        IF_ID.IR = memory.read<uint32_t>(pc);
-        // if(IF_ID.IR==0x8d090000)
-        //     while(1){
-        //         ;
-        //     }
-            
+        IF_ID.IR = memory.read<uint32_t>(pc);            
         pc4 = pc + 4;
         IF_ID.dpc4 = pc4;
         setPCSRC_MUX(ID_pcsrc,pc4,ID_bpc,ID_da,ID_jpc);
@@ -86,16 +81,16 @@ class MIPSX_SYSTEM
         da = FWDA_MUX.o_ID_a;
         setFWDB_MUX(fwdb,qb,EX_ealu,MEM_malu,MEM_mmo);
         db = FWDB_MUX.o_ID_b;
-        // x__err("db%x qb%x rt %x %x",db,qb,rt,IF_ID.IR);
 
         ID_rsrt_equ = ((da == db)?true:false);
         CTRL_UNIT.i_rsrtequ = ID_rsrt_equ;
         // If the contents of GPR rs ? Zero , than branch
-        CTRL_UNIT.i_rsGEZ = ((int32_t)da >= 0);// if GPR rs ≥ 0 then branch
-        CTRL_UNIT.i_rsLTZ = ((int32_t)da < 0);// if GPR rs < 0 then procedure_call
-        CTRL_UNIT.i_rsLEZ = ((int32_t)da <= 0);// if GPR rs ≤ 0 then branch
-        CTRL_UNIT.i_rsGTZ = ((int32_t)da > 0);// if GPR rs > 0 then branch
+        CTRL_UNIT.i_rsGEZ = ( ((int32_t)da >= 0) ? true:false );// if GPR rs ≥ 0 then branch
+        CTRL_UNIT.i_rsLTZ = ( ((int32_t)da < 0) ? true:false );// if GPR rs < 0 then procedure_call
+        CTRL_UNIT.i_rsLEZ = ( ((int32_t)da <= 0) ? true:false );// if GPR rs ≤ 0 then branch
+        CTRL_UNIT.i_rsGTZ = ( ((int32_t)da > 0) ? true:false );// if GPR rs > 0 then branch
         CTRL_CP0_UNIT.cop0_ins = IF_ID.IR;
+
         Control();
         wreg = CTRL_UNIT.o_wreg;
         m2reg = CTRL_UNIT.o_m2reg;
@@ -123,9 +118,15 @@ class MIPSX_SYSTEM
            dimm = zero_extend(imm);
         bpc = calcu_bpc(dpc4,shift_left_2(dimm));
         jpc = calcu_jpc(dpc4,addr);
+
+        // if(IF_ID.IR ==0x1ca00003)
+        //     x__err("%x %x",CTRL_UNIT.i_rsGTZ,bpc);
         
         ID_CP0_M::setSEPC_MUX(CTRL_CP0_UNIT.o_sepc,IF_pc,ID_pcd,EX_pce,MEM_pcm);
         cp0_epcin = ID_CP0_M::SEPC_MUX.o_epcin;
+
+        // if(IF_ID.IR ==0x1ca00003)
+        //     x__err("%x %x %x %x",CTRL_UNIT.i_rsGTZ,bpc,CTRL_CP0_UNIT.o_sepc);
 
 //         mux2x32 sta_mx (stalr,db,mtc0,sta_in);
 // // mux for status reg

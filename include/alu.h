@@ -24,12 +24,6 @@ enum ALUOP_t
     ALU_MTLO=20,
     ALU_SLT=21,
     ALU_SLTU=22,
-    ALU_EQ=23,
-    ALU_NE=24,
-    ALU_LEZ=25,
-    ALU_LTZ=26,
-    ALU_GTZ=27,
-    ALU_GEZ=28
 };
 namespace ALU{
     uint32_t sra(uint32_t src1,uint32_t sa){// csapp exercise 2.63 
@@ -75,19 +69,6 @@ namespace ALU{
             case ALU_AND:
                 aluResult = (src1 & src2);
                 break;
-            // case ALU_GEZ:// if rs ≥ 0 then branch
-            //     aluResult = ((int32_t)src1 >= 0);                
-            //     break;
-            // case ALU_LTZ:// if rs < 0 then procedure_call
-            //     aluResult = ((int32_t)src1 < 0);
-            //     break;
-            // case ALU_LEZ:// if rs ≤ 0 then branch
-            //     aluResult = ((int32_t)src1 <= 0);
-            //     break;
-            // case ALU_GTZ:// if rs > 0 then branch
-            //     aluResult = ((int32_t)src1 > 0);
-            //      break;
-        // branch的条件应该在ID阶段算出，不应留到EX阶段
             case ALU_SRA:
                 aluResult = ((int32_t)src1)>>src2;// sra(src1,src2)
                 break;
@@ -100,6 +81,7 @@ namespace ALU{
             case ALU_SUB:
                 aluResult = aluResult - aluResult;// if overflow,exception
                 break;
+              // branch的条件应该在ID阶段算出，不应留到EX阶段
             // case ALU_DIV:
             //     aluResult;
             default:
