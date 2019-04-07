@@ -120,12 +120,12 @@ class MIPSX_SYSTEM
         bpc = calcu_bpc(dpc4,shift_left_2(dimm));
         jpc = calcu_jpc(dpc4,addr);
 
-        // if(IF_ID.IR ==0x28810010)
+        // if(IF_ID.IR ==0x0061001a)
         //     while(1){
         //         ;
         //     }
             
-        //     x__err("");
+            // x__err("");
         
         ID_CP0_M::setSEPC_MUX(CTRL_CP0_UNIT.o_sepc,IF_pc,ID_pcd,EX_pce,MEM_pcm);
         cp0_epcin = ID_CP0_M::SEPC_MUX.o_epcin;
@@ -140,12 +140,13 @@ class MIPSX_SYSTEM
 // // mux for cause reg
 // mux2x32 epc_mx (epcin,db,mtc0,epc_in);
 // // mux for epc reg
-        cp0_operations(db);
-        // if(CTRL_CP0_UNIT.o_mfc0!=0){
-        //     x__err("mfc0 %x",CTRL_CP0_UNIT.o_mfc0);
-        //     // R3000_CP0::cp0_regs.SR.raw =0xcafebabe;
-        //     // R3000_CP0::dump_cp0_regs();
-        // }
+        cp0_operations(db);// CPR[0, rd, sel] ← rt
+        if(CTRL_UNIT.o_mfHI|CTRL_UNIT.o_mfLO|CTRL_UNIT.o_mtHI|CTRL_UNIT.o_mtLO\
+         |CTRL_UNIT.o_aluc==ALU_DIV|CTRL_UNIT.o_aluc==ALU_DIVU\
+         |CTRL_UNIT.o_aluc==ALU_MULT|CTRL_UNIT.o_aluc==ALU_MULTU){
+             hilo_operations_ID(da,db);
+         }
+            
             
 
         ID_EX.pipeline_cp0_regs[12] = R3000_CP0::cp0_regs.SR.raw;// sta
@@ -185,6 +186,8 @@ class MIPSX_SYSTEM
         ID_EX.eb = db;
         ID_EX.eimm = dimm;
         ID_EX.emfc0 = CTRL_CP0_UNIT.o_mfc0;
+        ID_EX.emfHI = CTRL_UNIT.o_mfHI;
+        ID_EX.emfLO = CTRL_UNIT.o_mfLO;
         // printf("[%x %x %x %x]forwada %x %x %x %x ",da,db,rs,rt,fwda,qa,EX_ealu,MEM_malu,MEM_mmo);
         // x__err("ID stage rs%x rt%x %x ",rs,rt,db);
         ID_EX.ern0 = drn;
@@ -231,6 +234,10 @@ class MIPSX_SYSTEM
         setELinkmfc0_MUX( (ID_EX.ejal) or (ID_EX.emfc0) or (ID_EX.elink),
             pc8c0r,eALUresult);
         ealu = ELinkmfc0_MUX.o_ealu;
+        if(ID_EX.emfHI)
+            ealu = HiLORegs::HI;
+        if(ID_EX.emfLO)
+            ealu = HiLORegs::LO;
 
 
         if(ID_EX.ejal)
@@ -340,8 +347,12 @@ class MIPSX_SYSTEM
 //         WriteReg = WriteReg and (!Stall);
         setWM2REG_MUX(MEM_WB.wm2reg,MEM_WB.wmo,MEM_WB.walu);
         wdi = WM2REG_MUX.o_wdi;
-        if(MEM_WB.wwreg)
-            Regs[MEM_WB.wrn] = wdi; 
+        if(MEM_WB.wwreg){            
+            gp.set_reg(MEM_WB.wrn,wdi);// Regs[MEM_WB.wrn] = wdi;
+            //这样忽略写信号为真，而reg是$0的情况,(HI LO)相关的指令可能会发生这种情况
+        }
+            
+
 
         if(show_stage_log)
             printf("WB %08x\t", MEM_WB.IR);
@@ -368,7 +379,6 @@ class MIPSX_SYSTEM
         if(!flag)
             printf("\n");
         
-        // printf("fuckkkkkkkkkkkkkkkkkkkkkkkkkk:%x\n",(uint32_t*)&memory.real_main_Ram[0xb0]);
         // cpu.dump_regs();
     }
 };

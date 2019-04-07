@@ -17,6 +17,7 @@ typedef union {
         uint32_t R31_RA;
     };
     uint32_t register_file[32];
+    public:
     void set_reg(int index, uint32_t value)
     {
         if (index)
@@ -25,17 +26,21 @@ typedef union {
     friend class MIPSX_SYSTEM;
 } R3000A_General_Purpose_Registers;
 
+namespace HiLORegs{
+    uint32_t HI = 0xcafebabe;
+    uint32_t LO = 0xdeadbeef;
+}
+
 class R3000A_CPU
 {
     R3000A_General_Purpose_Registers gp;
-    uint32_t HI = 0xcafebabe;
-    uint32_t LO = 0xdeadbeef;
     public:
         R3000A_CPU(){
             memset(&gp.register_file,0,sizeof(uint32_t[32]));
         };
         friend class MIPSX_SYSTEM;
         void dump_regs(){
+            printf("PSX HI=%0#10x LO=%0#10x\n",HiLORegs::HI,HiLORegs::LO);
             printf("GPR00: r0 %08x at %08x v0 %08x v1 %08x\n",\
                 gp.R00_ZR,gp.R01_AT,gp.R02_V0,gp.R03_V1);
             printf("GPR04: a0 %08x a1 %08x a2 %08x a3 %08x\n",\

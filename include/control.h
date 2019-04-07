@@ -7,6 +7,8 @@
 #include "debug.h"
 #include "bitwise.h"
 #include "cp0.h"
+#include "mul.h"
+#include "div.h"
 namespace CONTROL{
     struct {
         uint32_t i_mrn;
@@ -40,7 +42,11 @@ namespace CONTROL{
         uint32_t o_wpcir;
         uint32_t o_sl_width_sel;//0b00 32;0b01 16; 0b10 8
         bool o_lbu;/*lbu取出来的8bit数要zero-extend(而lb是8bit signextend到32bit)*/
-        bool o_lhu;        
+        bool o_lhu;
+        bool o_mfHI;
+        bool o_mfLO;
+        bool o_mtHI;
+        bool o_mtLO;
     }CTRL_UNIT;
 
     struct {
@@ -161,6 +167,7 @@ namespace CONTROL{
         // x__err("%x %x",CTRL_CP0_UNIT.rt,CTRL_CP0_UNIT.rd);
         
     }
+
     void cp0_operations(uint32_t writeData){//ID stage
         // CPR[0, rd, sel] ← rt
         if(CTRL_CP0_UNIT.o_mtc0){
@@ -184,6 +191,43 @@ namespace CONTROL{
     }
     // rt ← CPR[0,rd,sel]
 
+    void hilo_operations_ID(uint32_t rs_writeData,uint32_t rt_data){//ID stage
+        if(CTRL_UNIT.o_mtHI){// HI ← rs
+            HiLORegs::HI = rs_writeData;
+        }
+        if(CTRL_UNIT.o_mtLO){// LO ← rs
+            HiLORegs::LO = rs_writeData;
+        }
+        uint32_t src1 = rs_writeData;
+        uint32_t src2 = rt_data;
+        uint64_t product64;
+        switch (CTRL_UNIT.o_aluc)
+        {
+            case ALU_MULT:
+                product64 = MultiplyUnit::Mult(src1,src2);
+                HiLORegs::HI = product64 >> 32;
+                HiLORegs::LO = product64 & 0xffffffff;
+                break;
+            case ALU_MULTU:
+                product64 = MultiplyUnit::Multu(src1,src2);
+                HiLORegs::HI = product64 >> 32;
+                HiLORegs::LO = product64 & 0xffffffff;
+                break;
+            case ALU_DIV:
+                DivideUnit::Div(src1,src2);
+                HiLORegs::HI = DivideUnit::get_hi();
+                HiLORegs::LO = DivideUnit::get_lo();
+                break;
+            case ALU_DIVU:
+                DivideUnit::Divu(src1,src2);
+                HiLORegs::HI = DivideUnit::get_hi();
+                HiLORegs::LO = DivideUnit::get_lo();
+                break;
+            default:
+                break;
+        }
+    }
+
     void clear_ctrl(){
         CTRL_UNIT.o_wreg=false;
         CTRL_UNIT.o_m2reg=false;
@@ -199,6 +243,10 @@ namespace CONTROL{
         CTRL_UNIT.o_sl_width_sel = 0b00;
         CTRL_UNIT.o_lbu = false;
         CTRL_UNIT.o_lhu = false;
+        CTRL_UNIT.o_mfHI = false;
+        CTRL_UNIT.o_mfLO = false;
+        CTRL_UNIT.o_mtHI = false;
+        CTRL_UNIT.o_mtLO = false;
         CTRL_CP0_UNIT.o_cancel = false;
         CTRL_CP0_UNIT.o_isbr = false;
         CTRL_CP0_UNIT.o_ove = false;
@@ -282,7 +330,6 @@ namespace CONTROL{
                     case 0b000110:/* srlv */
                         ALUOP = ALU_SRL;
                         break;
-
                     case 0b011010:/* div */
                         ALUOP = ALU_DIV;
                         break; 
@@ -290,16 +337,20 @@ namespace CONTROL{
                         ALUOP = ALU_DIVU;
                         break;
                     case 0b010000:/* mfhi */
-                        ALUOP = ALU_MFHI;
+                        CTRL_UNIT.o_mfHI = true;
+                        CTRL_UNIT.o_wreg = true;
                         break;
                     case 0b010010:/* mflo */
-                        ALUOP = ALU_MFLO;
+                        CTRL_UNIT.o_mfLO = true;
+                        CTRL_UNIT.o_wreg = true;
                         break;
                     case 0b010001:/* mthi */
-                        ALUOP = ALU_MTHI;
+                        CTRL_UNIT.o_mtHI = true;
+                        //CTRL_UNIT.o_wreg = false; rd域是0,所以即便是写Reg为true也没关系，这里默认true,(考虑到forward问题)
                         break;
                     case 0b010011:/* mtlo */
-                        ALUOP = ALU_MTLO;
+                        CTRL_UNIT.o_mtLO = true;
+                        //CTRL_UNIT.o_wreg = false; rd域是0,所以即便是写Reg为true也没关系，这里默认true,(考虑到forward问题)
                         break;
                     case 0b011000:/* mult */
                         ALUOP = ALU_MULT;
@@ -310,7 +361,7 @@ namespace CONTROL{
 
                     case 0b001000:/* jr */
                         CTRL_UNIT.o_pcsrc = 0b10;
-                        
+                        /* CTRL_UNIT.o_wreg = false; R type but do not write Reg*/
 
                         break;
                     case 0b001001:/* jalr */

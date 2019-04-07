@@ -14,16 +14,12 @@ enum ALUOP_t
     ALU_SLL=10,
     ALU_SRL=11,
     ALU_SRA=12,
-    ALU_MULT=13,
-    ALU_MULTU=14,
-    ALU_DIV=15,
-    ALU_DIVU=16,
-    ALU_MFHI=17,
-    ALU_MFLO=18,
-    ALU_MTHI=19,
-    ALU_MTLO=20,
-    ALU_SLT=21,
-    ALU_SLTU=22,
+    ALU_SLT,
+    ALU_SLTU,
+    ALU_MULT,
+    ALU_MULTU,
+    ALU_DIV,
+    ALU_DIVU
 };
 namespace ALU{
     uint32_t sra(uint32_t src1,uint32_t sa){// csapp exercise 2.63 
