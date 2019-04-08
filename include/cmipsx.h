@@ -144,8 +144,11 @@ class MIPSX_SYSTEM
         if(CTRL_UNIT.o_mfHI|CTRL_UNIT.o_mfLO|CTRL_UNIT.o_mtHI|CTRL_UNIT.o_mtLO\
          |CTRL_UNIT.o_aluc==ALU_DIV|CTRL_UNIT.o_aluc==ALU_DIVU\
          |CTRL_UNIT.o_aluc==ALU_MULT|CTRL_UNIT.o_aluc==ALU_MULTU){
-             hilo_operations_ID(da,db);
+            hilo_operations_ID(da,db);
          }
+         ID_EX.ewriteHILO = (CTRL_UNIT.o_mtHI|CTRL_UNIT.o_mtLO\
+            |CTRL_UNIT.o_aluc==ALU_DIV|CTRL_UNIT.o_aluc==ALU_DIVU\
+            |CTRL_UNIT.o_aluc==ALU_MULT|CTRL_UNIT.o_aluc==ALU_MULTU);
             
             
 
@@ -234,6 +237,7 @@ class MIPSX_SYSTEM
         setELinkmfc0_MUX( (ID_EX.ejal) or (ID_EX.emfc0) or (ID_EX.elink),
             pc8c0r,eALUresult);
         ealu = ELinkmfc0_MUX.o_ealu;
+        
         if(ID_EX.emfHI)
             ealu = HiLORegs::HI;
         if(ID_EX.emfLO)
@@ -262,6 +266,7 @@ class MIPSX_SYSTEM
         EX_MEM.msl_width_sel = ID_EX.esl_width_sel;
         EX_MEM.mlbu = ID_EX.elbu;
         EX_MEM.mlhu = ID_EX.elhu;
+        EX_MEM.mwriteHILO = ID_EX.ewriteHILO;
         EX_MEM.PCm = ID_EX.PCe;
         if(show_stage_log)
             printf("EX %08x\t", EX_MEM.IR);
@@ -318,6 +323,7 @@ class MIPSX_SYSTEM
         MEM_WB.wrn = EX_MEM.mrn;
         MEM_WB.walu = EX_MEM.malu;
         MEM_WB.wmo = mmo;
+        MEM_WB.writeHILO = EX_MEM.mwriteHILO;
     
 
     MEM_WB.debug_wbPC = EX_MEM.PCm;
@@ -351,7 +357,10 @@ class MIPSX_SYSTEM
             gp.set_reg(MEM_WB.wrn,wdi);// Regs[MEM_WB.wrn] = wdi;
             //这样忽略写信号为真，而reg是$0的情况,(HI LO)相关的指令可能会发生这种情况
         }
-            
+        if(MEM_WB.writeHILO){
+            HiLORegs::HI = mirror_hilo::mirror_hi;
+            HiLORegs::LO = mirror_hilo::mirror_lo;
+        }
 
 
         if(show_stage_log)
@@ -375,6 +384,7 @@ class MIPSX_SYSTEM
         EX(ID_EX, EX_MEM);
         ID(IF_ID, ID_EX);
         IF(Pre_IF, IF_ID);
+        
         Pre_IF.PC = IF_npc;            
         if(!flag)
             printf("\n");

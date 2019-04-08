@@ -9,6 +9,7 @@
 #include "cp0.h"
 #include "mul.h"
 #include "div.h"
+#include "cpu.h"
 namespace CONTROL{
     struct {
         uint32_t i_mrn;
@@ -147,7 +148,7 @@ namespace CONTROL{
         using namespace DECODE;
         CTRL_CP0_UNIT.rd = get_rd(CTRL_CP0_UNIT.cop0_ins);
         CTRL_CP0_UNIT.rt = get_rt(CTRL_CP0_UNIT.cop0_ins);
-        uint MTMF_rs = get_rs(CTRL_CP0_UNIT.cop0_ins);
+        uint32_t MTMF_rs = get_rs(CTRL_CP0_UNIT.cop0_ins);
         uint32_t funct = get_funct(CTRL_CP0_UNIT.cop0_ins);
         cp0_notsoimportantCases();
         switch (MTMF_rs)
@@ -191,12 +192,13 @@ namespace CONTROL{
     }
     // rt ← CPR[0,rd,sel]
 
+
     void hilo_operations_ID(uint32_t rs_writeData,uint32_t rt_data){//ID stage
         if(CTRL_UNIT.o_mtHI){// HI ← rs
-            HiLORegs::HI = rs_writeData;
+            mirror_hilo::mirror_hi = rs_writeData;
         }
         if(CTRL_UNIT.o_mtLO){// LO ← rs
-            HiLORegs::LO = rs_writeData;
+            mirror_hilo::mirror_lo = rs_writeData;
         }
         uint32_t src1 = rs_writeData;
         uint32_t src2 = rt_data;
@@ -205,23 +207,23 @@ namespace CONTROL{
         {
             case ALU_MULT:
                 product64 = MultiplyUnit::Mult(src1,src2);
-                HiLORegs::HI = product64 >> 32;
-                HiLORegs::LO = product64 & 0xffffffff;
+                mirror_hilo::mirror_hi = product64 >> 32;
+                mirror_hilo::mirror_lo = product64 & 0xffffffff;
                 break;
             case ALU_MULTU:
                 product64 = MultiplyUnit::Multu(src1,src2);
-                HiLORegs::HI = product64 >> 32;
-                HiLORegs::LO = product64 & 0xffffffff;
+                mirror_hilo::mirror_hi = product64 >> 32;
+                mirror_hilo::mirror_lo = product64 & 0xffffffff;
                 break;
             case ALU_DIV:
                 DivideUnit::Div(src1,src2);
-                HiLORegs::HI = DivideUnit::get_hi();
-                HiLORegs::LO = DivideUnit::get_lo();
+                mirror_hilo::mirror_hi = DivideUnit::get_hi();
+                mirror_hilo::mirror_lo = DivideUnit::get_lo();
                 break;
             case ALU_DIVU:
                 DivideUnit::Divu(src1,src2);
-                HiLORegs::HI = DivideUnit::get_hi();
-                HiLORegs::LO = DivideUnit::get_lo();
+                mirror_hilo::mirror_hi = DivideUnit::get_hi();
+                mirror_hilo::mirror_lo = DivideUnit::get_lo();
                 break;
             default:
                 break;

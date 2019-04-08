@@ -56,14 +56,15 @@ int main()
     MIPSX_SYSTEM psx;
     Monitor monitor(psx);
     int i=0;
-    for(int i=-3;i<=121086;i++)
-    // for(int i=-3;i<=86550;i++)
-    {//86550
+    for(int i=-3;i<=129476;i++) 
+    {
         if(i>0)
             printf("[%06d] ",i);
         psx.tick();
+        if(i>0)
+            monitor.showStatus();
     }
-    monitor.showStatus();
+    
     // R3000_CP0::dump_cp0_regs();
     return 0;
 }

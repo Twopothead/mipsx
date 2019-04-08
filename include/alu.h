@@ -1,5 +1,6 @@
 #pragma once
 #include "debug.h"
+#include "inttypes.h"
 enum ALUOP_t
 {
     ALU_ADD=1,
@@ -21,19 +22,22 @@ enum ALUOP_t
     ALU_DIV,
     ALU_DIVU
 };
+// C语言中，对于移位操作执行的是逻辑左移和算术右移，不过对于无符号类型，所有的移位操作都是逻辑的
 namespace ALU{
-    uint32_t sra(uint32_t src1,uint32_t sa){// csapp exercise 2.63 
-    /* 等价于 result =((int32_t)src1)>>src2); */
+    uint32_t sra(uint32_t src2,uint32_t sa){// rd ← rt >> sa
+// csapp exercise 2.63 
+    /* 等价于 result = (((int32_t)src2)>>src1); */
         uint32_t w = sizeof(uint32_t)<<3;
-        uint32_t xsrl = (uint32_t) src1 >> sa;
+        uint32_t xsrl = (uint32_t) src2 >> sa;
         int sign = (( 1 << (w-1-sa) ) & xsrl ) << 1;
         int t = ~ ((1<<(w-sa)) - 1);/* t=[11...1100...00], w-1...w-k 位全 1 */
         int n = t + (sign ^ (1 << (w - sa)));
         uint32_t result = n + xsrl;
         return result;
     }
-    uint32_t srl(uint32_t src1,uint32_t sa){
-        uint32_t xsra = (int32_t)src1>>sa;
+    uint32_t srl(uint32_t src2,uint32_t sa){// rd ← rt >> sa (logical)
+    /* 等价与 result = (((uint32_t)src2)>>src1); */
+        uint32_t xsra = (int32_t)src2>>sa;
         uint32_t w = sizeof(uint32_t)<<3;
         uint32_t result = xsra & ( (1<<(w-sa)) -1);
     }
@@ -65,17 +69,17 @@ namespace ALU{
             case ALU_AND:
                 aluResult = (src1 & src2);
                 break;
-            case ALU_SRA:
-                aluResult = ((int32_t)src1)>>src2;// sra(src1,src2)
+            case ALU_SRA:// rd ← rt >> sa
+                aluResult = ((int32_t)src2)>>src1;// sra(src2,src1);
                 break;
-            case ALU_SRL:
-                aluResult = ((uint32_t)src1)>>src2;// srl(src1,src2)
+            case ALU_SRL:// rd ← rt >> sa (logical)
+                aluResult = ((uint32_t)src2)>>src1;// srl(src2,src1)
                 break;
             case ALU_SUBU:
-                aluResult = aluResult - aluResult;
+                aluResult = src1 - src2;
                 break;
             case ALU_SUB:
-                aluResult = aluResult - aluResult;// if overflow,exception
+                aluResult = src1 - src2;// if overflow,exception
                 break;
               // branch的条件应该在ID阶段算出，不应留到EX阶段
             // case ALU_DIV:

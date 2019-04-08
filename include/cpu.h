@@ -27,8 +27,15 @@ typedef union {
 } R3000A_General_Purpose_Registers;
 
 namespace HiLORegs{
-    uint32_t HI = 0xcafebabe;
-    uint32_t LO = 0xdeadbeef;
+    uint32_t HI = 0x0;
+    uint32_t LO = 0x0;
+    // uint32_t HI = 0xcafebabe;
+    // uint32_t LO = 0xdeadbeef;
+}
+
+namespace mirror_hilo{
+    uint32_t mirror_hi=0;
+    uint32_t mirror_lo=0;
 }
 
 class R3000A_CPU

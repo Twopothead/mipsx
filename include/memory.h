@@ -60,8 +60,9 @@ class PlayStationMemory
             pointer = (T *)&CacheCtrl;
             break;
         case 0x1f000000 ... 0x1f7fffff:// expansion region 1
-            x__log("Read expansion region 1");
-            return (T)0xffffffff;// it seems to be full-ones
+            // x__log("Read expansion region 1");
+            // return (T)0xffffffff;// it seems to be full-ones
+            return (T)0x00000000;
 
         case 0x1fa00000 ... 0x1fbfffff:// expansion region 3
             x__log("Read expansion region 3");
