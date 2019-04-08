@@ -1,6 +1,7 @@
 #pragma once
 #include <inttypes.h>
 #include "debug.h"
+#include "timers.h"
 namespace RW{
     void io_custom_write(uint32_t addr,uint32_t base_addr,uint32_t *pbase,uint32_t data,int width){
             uint32_t offset = addr - base_addr;//addr - 0x1f801d80;
@@ -204,6 +205,12 @@ uint32_t io_read(uint32_t vaddr,int width){
             case 0x1f801070 ... 0x1f801074:
                 data = Interrupt_Control::read(vaddr,width);
                 break;
+            case 0x1f801100 ... 0x1f80110f:// Timer 0
+            case 0x1f801110 ... 0x1f80111f:// Timer 1
+            case 0x1f801120 ... 0x1f80112f:// Timer 2
+                data = PSX_Timer::read(vaddr,width);
+                break;
+
             case 0x1f801810 ... 0x1f801810:
                 data = GPU_Registers::read(vaddr,width);
                 break;
@@ -235,6 +242,11 @@ void io_write(uint32_t vaddr,uint32_t data,int width){
                 break;
             case 0x1f801070 ... 0x1f801074:
                 Interrupt_Control::write(vaddr,data,width);
+                break;
+            case 0x1f801100 ... 0x1f80110f:// Timer 0
+            case 0x1f801110 ... 0x1f80111f:// Timer 1
+            case 0x1f801120 ... 0x1f80112f:// Timer 2
+                PSX_Timer::write(vaddr,data,width);
                 break;
             case 0x1f801810 ... 0x1f801810:
                 GPU_Registers::write(vaddr,data,width);

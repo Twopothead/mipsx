@@ -52,11 +52,11 @@ int main()
      // sets bit 16 of SR which is the “isolate cache” bit. It makes all the following read
     // and write target directly the cache instead of going through it towards the main
      //memory.
-     //86545
     MIPSX_SYSTEM psx;
     Monitor monitor(psx);
     int i=0;
-    for(int i=-3;i<=129476;i++) 
+    // T = 150000, OK tested
+    for(int i=-3;i<=150000;i++)
     {
         if(i>0)
             printf("[%06d] ",i);
