@@ -49,7 +49,7 @@ namespace Multiplexer{
                     case 0b01:
                         NEXTPC_MUX.o_next_pc = NEXTPC_MUX.epc;
                         break;
-                    case 0b10:
+                    case 0b10:// exception handler entry
                         NEXTPC_MUX.o_next_pc = NEXTPC_MUX.base;
                         break;
                     default:

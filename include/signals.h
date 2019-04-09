@@ -6,8 +6,10 @@ namespace IF_Signals
     uint32_t npc;
     uint32_t pc4;
     uint32_t ins;
+    uint32_t exception_handler_address;
     void clear_temp_IF_signals(){
         npc = 0,pc4 = 0,ins = 0;
+        exception_handler_address = 0;
     }
 
 } 

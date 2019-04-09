@@ -4,7 +4,7 @@
 #include "debug.h"
 //intel x86是小端模式，位域bit field需要逆过来放
 typedef union{
-    struct{
+    struct{//intel x86 little endian
         uint32_t padding2:8;
         uint32_t Index:6;
         uint32_t padding1:17;
@@ -14,7 +14,7 @@ typedef union{
 }index_reg;
 
 typedef union {
-    struct {
+    struct {//intel x86 little endian
         uint32_t padding2:8;
         uint32_t Random:6;
         uint32_t padding1:18;
@@ -23,7 +23,7 @@ typedef union {
 }random_reg;
 
 typedef union {
-    struct {
+    struct {//intel x86 little endian
         uint32_t padding:6;
         uint32_t PID:6;
         uint32_t VPN:20;
@@ -32,7 +32,7 @@ typedef union {
 }tlb_high_reg;
 
 typedef union {
-    struct {       
+    struct {//intel x86 little endian       
         uint32_t padding:8;
         uint32_t G:1;
         uint32_t V:1;
@@ -44,7 +44,7 @@ typedef union {
 }tlb_low_reg;
 
 typedef union {
-    struct{
+    struct{//intel x86 little endian
         uint32_t padding4:2;
         uint32_t EXECODE:5;
         uint32_t padding3:1;
@@ -89,7 +89,7 @@ namespace CP0_CauseReg_EXECODE_Field{
 
 
 typedef union {
-    struct {
+    struct {//intel x86 little endian
         uint32_t padding:2;
         uint32_t BADV:19;
         uint32_t PTE_BASE:11;
@@ -99,7 +99,7 @@ typedef union {
 
 
 typedef union {
-    struct {
+    struct {//intel x86 little endian
         uint32_t IEc:1;
         uint32_t KUc:1;
         uint32_t IEp:1;
@@ -124,7 +124,7 @@ typedef union {
 }status_reg;// 12
 
 typedef union {
-    struct {
+    struct {//intel x86 little endian
         uint32_t Rev:8;
         uint32_t Imp:8;
         uint32_t padding:16;

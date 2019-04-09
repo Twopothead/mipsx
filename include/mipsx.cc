@@ -5,24 +5,7 @@
 #include <stdlib.h>
 #include "cmipsx.h"
 #include "monitor.h"
-// namespace PipelineStall{
-//     using namespace pipeline_registers;
-//     bool Stall = false;
-//     bool calcuStall(bool use_rs_field,bool use_rt_field,uint32_t rs,uint32_t rt){
-//         bool stall = false;
-//         // bool i_rs = use_rs_field;// i_rs and i_rt indicate that an instruction
-//         // bool i_rt = use_rt_field;// uses the contents of the rs register and the rt register,
-//         // stall = (  ID_EX.eRegWrite
-//         //         and (ID_EX.eMemtoReg)
-//         //         and (ID_EX.eRegisterRn!=0)
-//         //         and (      ( (i_rs) and (ID_EX.eRegisterRn==rs) )
-//         //                or  ( (i_rt) and (ID_EX.eRegisterRn==rt) )
-//         //              )
-//         //         );
-//         return stall;
-//     }
 
-// }
 
 int main()
 {
@@ -56,13 +39,27 @@ int main()
     Monitor monitor(psx);
     int i=0;
     // T = 150000, OK tested
-    for(int i=-3;i<=150000;i++)
+    //     2695835
+    // [2695642] 0xbfc0d964 0x0000000c
+    // for(int i=-3;i<=10250000;i++)
+    // T = 2695642 syscall  [2695642] 0xbfc0d964 0x0000000c
+    // for(int i=-3;i<=250000;i++)
+    // Exception:
+    //      [2695642] 0xbfc0d964 0x0000000c
+    //      [2695835] 0x00001014 0x42000010
+    //      [2695836] 0xbfc0d968 0x03e00008
+
+    // for(int i=-3;i<=2695642;i++)
+    for(int i=-3;i<=2695660;i++)
     {
-        if(i>0)
+        if(i>2695635){
             printf("[%06d] ",i);
+            Log::log = true;
+        }
+            
         psx.tick();
-        if(i>0)
-            monitor.showStatus();
+        // if(i>0)
+        //     monitor.showStatus();
     }
     
     // R3000_CP0::dump_cp0_regs();

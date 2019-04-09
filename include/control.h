@@ -10,6 +10,24 @@
 #include "mul.h"
 #include "div.h"
 #include "cpu.h"
+namespace PipelineStall{
+    using namespace pipeline_registers;
+    bool Stall = false;
+    // bool calcuStall(bool use_rs_field,bool use_rt_field,uint32_t rs,uint32_t rt){
+    //     bool stall = false;
+    //     // bool i_rs = use_rs_field;// i_rs and i_rt indicate that an instruction
+    //     // bool i_rt = use_rt_field;// uses the contents of the rs register and the rt register,
+    //     // stall = (  ID_EX.eRegWrite
+    //     //         and (ID_EX.eMemtoReg)
+    //     //         and (ID_EX.eRegisterRn!=0)
+    //     //         and (      ( (i_rs) and (ID_EX.eRegisterRn==rs) )
+    //     //                or  ( (i_rt) and (ID_EX.eRegisterRn==rt) )
+    //     //              )
+    //     //         );
+    //     return stall;
+    // }
+
+}
 namespace CONTROL{
     struct {
         uint32_t i_mrn;
@@ -40,7 +58,9 @@ namespace CONTROL{
         uint32_t rs;
         uint32_t rt;
         uint32_t o_pcsrc;
-        uint32_t o_wpcir;
+        uint32_t o_selpc;
+        // uint32_t o_wpcir;
+        bool o_stall;
         uint32_t o_sl_width_sel;//0b00 32;0b01 16; 0b10 8
         bool o_lbu;/*lbu取出来的8bit数要zero-extend(而lb是8bit signextend到32bit)*/
         bool o_lhu;
@@ -54,6 +74,7 @@ namespace CONTROL{
         uint32_t cop0_ins;
         uint32_t rt;
         uint32_t rd;
+        bool i_ecancel;
         bool o_cancel;
         bool o_isbr;
         bool o_ove;
@@ -241,7 +262,9 @@ namespace CONTROL{
         CTRL_UNIT.o_regrt=false;
         CTRL_UNIT.o_sext=false;
         CTRL_UNIT.o_pcsrc=0b00;
-        CTRL_UNIT.o_wpcir=0b00;
+        // CTRL_UNIT.o_selpc=0b00;// default npc
+        // CTRL_UNIT.o_wpcir=0b00;
+        CTRL_UNIT.o_stall=false;
         CTRL_UNIT.o_sl_width_sel = 0b00;
         CTRL_UNIT.o_lbu = false;
         CTRL_UNIT.o_lhu = false;
@@ -271,6 +294,8 @@ namespace CONTROL{
         CTRL_UNIT.i_ern = CrossPipelineWires::EX_ern;
         CTRL_UNIT.i_em2reg = CrossPipelineWires::EX_em2reg;
         CTRL_UNIT.i_ewreg = CrossPipelineWires::EX_ewreg;
+        CTRL_UNIT.o_selpc=0b00;// set default value : select npc
+        CTRL_UNIT.o_stall=false;// set default value : no stall
         ALUOP_t ALUOP;
         switch (CTRL_UNIT.op)
         {
@@ -367,15 +392,24 @@ namespace CONTROL{
 
                         break;
                     case 0b001001:/* jalr */
-                        // x__err("jalr");
                         CTRL_UNIT.o_jal = false;/*不变成31.而是直接rd*/
                         CTRL_UNIT.o_link = true;
                         CTRL_UNIT.o_wreg = true;
                         CTRL_UNIT.o_regrt = false;
                         CTRL_UNIT.o_pcsrc = 0b10;
-                        break;                
-                        default:
-                            break;
+                        break;  
+
+                    case 0b001100:/* syscall */  
+                        CTRL_CP0_UNIT.o_exc = true;
+                        CTRL_CP0_UNIT.o_cancel = true;
+                        CTRL_UNIT.o_selpc = 0b10;// 00: npc; 01: epc; 10: exc_base
+                        // x__log("CTRL_UNIT.o_selpc%x",CTRL_UNIT.o_selpc);
+                        CTRL_CP0_UNIT.o_cause = CP0_CauseReg_EXECODE_Field::SYS << 2;//syscall
+                        
+                        break;
+
+                    default:
+                        break;
                 }//funct switch end 
                 break;
 
@@ -574,6 +608,12 @@ namespace CONTROL{
                 break;
         }// op switch end
         CTRL_UNIT.o_aluc = ALUOP;
+        using  namespace CrossPipelineWires;
+// The signal cancel generated in the ID stage is stored into an ID/EXE pipeline register 
+// whose output e_cancel is used for canceling the next instruction to syscall
+        CTRL_UNIT.o_pcsrc = (EX_cancel) ? 0b00 : CTRL_UNIT.o_pcsrc;
+        CTRL_UNIT.o_wmem = (EX_cancel) ? false : CTRL_UNIT.o_wmem;
+        CTRL_UNIT.o_wreg = (EX_cancel) ? false : CTRL_UNIT.o_wreg; 
         using namespace ForwardingUnit;
         CTRL_UNIT.o_fwda = calcuforwardA(CTRL_UNIT.rs);
         CTRL_UNIT.o_fwdb = calcuforwardB(CTRL_UNIT.rt);

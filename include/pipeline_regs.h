@@ -38,6 +38,7 @@ namespace pipeline_registers
         bool emfHI;
         bool emfLO;
         bool ewriteHILO;
+        bool ecancel;
         uint32_t pipeline_cp0_regs[31];/*注意，这只是pipeling registers里暂存的cp0 regs，不是cp0 regs本身*/
         uint32_t PCe;
     } ID_EX;

@@ -16,6 +16,9 @@
 namespace pr = pipeline_registers;
 bool show_stage_log = false;
 int flag = 5;
+namespace Log{
+    bool log = false;
+}
 class MIPSX_SYSTEM
 {
     R3000A_CPU cpu;
@@ -35,20 +38,40 @@ class MIPSX_SYSTEM
         using namespace IF_Signals;
         using namespace CrossPipelineWires;
         using namespace Multiplexer::IFMUX;
+        using namespace R3000_CP0;
+        using namespace CONTROL;
         clear_temp_IF_signals();
+// if Pipeline stall,PC and IF/ID registers are not updated
+        if(PipelineStall::Stall){
+            printf("return");
+            return;
+        }
+            //  printf("not return");
+// If BEV = 1, then the processor is in “Bootstrap” mode, and the exception vectors reside
+// in the BIOS ROM. If BEV = 0, then the processor is in normal mode, and the exception vectors reside in RAM.
+        exception_handler_address = (cp0_regs.SR.BEV !=0 ) ? 0xbfc00180 : 0x80000080;
         uint32_t pc =  Pre_IF.PC;
+
         IF_pc = pc;
-        IF_ID.IR = memory.read<uint32_t>(pc);            
+        IF_ID.IR = memory.read<uint32_t>(pc);
+        // if(Log::log) 
+        //     printf(" fetchpc:%x ",pc);           
         pc4 = pc + 4;
         IF_ID.dpc4 = pc4;
         setPCSRC_MUX(ID_pcsrc,pc4,ID_bpc,ID_da,ID_jpc);
         npc = PCSRC_MUX.o_npc;
-        // x__err("pcsrc%x pc4%x IDbpc%x da%x jpc%x",ID_pcsrc,pc4,ID_bpc,ID_da,ID_jpc)
+        //  if(Log::log)
+        //     x__err("pcsrc %d %x %x %x %x",ID_pcsrc,pc4,ID_bpc,ID_da,ID_jpc);
         IF_npc = npc;
+        IF_CP0_M::setNEXTPC_MUX(ID_selpc,\
+                IF_npc,R3000_CP0::cp0_regs.EPC,exception_handler_address);
+        next_pc = IF_CP0_M::NEXTPC_MUX.o_next_pc;
         IF_ID.PCd = pc;
+        // if(Log::log)
+        //     x__err("%x %d %x %x %x ",pc,ID_selpc,IF_npc,R3000_CP0::cp0_regs.EPC,exception_handler_address);
+    
         if(show_stage_log)
             printf("IF %08x\t", IF_ID.IR);
-        using namespace R3000_CP0;
         return;
     }
     void ID(pr::IF_ID_t &IF_ID, pr::ID_EX_t &ID_EX)
@@ -59,6 +82,7 @@ class MIPSX_SYSTEM
         using namespace Multiplexer::IDMUX;
         using namespace CONTROL;
         clear_ID_temp_signals();
+        CTRL_CP0_UNIT.i_ecancel = EX_cancel;
         op = get_op(IF_ID.IR);
         funct = get_funct(IF_ID.IR);
         rs = get_rs(IF_ID.IR);
@@ -93,6 +117,14 @@ class MIPSX_SYSTEM
         CTRL_CP0_UNIT.cop0_ins = IF_ID.IR;
 
         Control();
+        if(CTRL_CP0_UNIT.o_cancel){
+            CTRL_UNIT.o_pcsrc = 0b00;
+            // PipelineStall::Stall = true;
+            printf(" cancel ");
+        }
+
+        // if(Log::log)
+        //     x__log("getselpc%d",CTRL_UNIT.o_selpc);
         wreg = CTRL_UNIT.o_wreg;
         m2reg = CTRL_UNIT.o_m2reg;
         wmem = CTRL_UNIT.o_wmem;
@@ -110,8 +142,8 @@ class MIPSX_SYSTEM
         setREGRT_MUX(regrt,rd,rt);
         drn = REGRT_MUX.o_drn;
         dsl_width_sel = CTRL_UNIT.o_sl_width_sel;
-
         ID_pcd = IF_ID.PCd;
+        PipelineStall::Stall = CTRL_UNIT.o_stall;
 
         if(CTRL_UNIT.o_sext)
            dimm = sign_extend(imm);
@@ -149,7 +181,15 @@ class MIPSX_SYSTEM
          ID_EX.ewriteHILO = (CTRL_UNIT.o_mtHI|CTRL_UNIT.o_mtLO\
             |CTRL_UNIT.o_aluc==ALU_DIV|CTRL_UNIT.o_aluc==ALU_DIVU\
             |CTRL_UNIT.o_aluc==ALU_MULT|CTRL_UNIT.o_aluc==ALU_MULTU);
-            
+
+        if(CTRL_CP0_UNIT.o_exc){
+            using namespace R3000_CP0;
+            cp0_regs.SR.raw = (cp0_regs.SR.raw & ~0x3f) | ( (cp0_regs.SR.raw<<2) & 0x3f );
+            uint32_t code = Bitwise::extract(2,6,CTRL_CP0_UNIT.o_cause);// [ 6 : 2 ] EXECODE
+            cp0_regs.CAUSE.raw = (cp0_regs.CAUSE.raw & 0x7f) | ( ( (code)<<2 ) & 0x7f ) ;
+            R3000_CP0::cp0_regs.EPC;// sepc mux select 
+        }
+
             
 
         ID_EX.pipeline_cp0_regs[12] = R3000_CP0::cp0_regs.SR.raw;// sta
@@ -157,22 +197,28 @@ class MIPSX_SYSTEM
         ID_EX.pipeline_cp0_regs[14] = R3000_CP0::cp0_regs.EPC;// epc
         if(CTRL_CP0_UNIT.o_mfc0)
             ID_EX.pipeline_cp0_regs[rd] = R3000_CP0::cp0_regs.val[rd];//节省时间，不全拷，只拷用到的
+        
 
         // if(CTRL_CP0_UNIT.o_mtc0){
         //     R3000_CP0::dump_cp0_regs();
         //     x__err("iscache %x ",R3000_CP0::cp0_regs.SR.IsC);
         // }
-            
+       
+
+
+
 
 
         using namespace CrossPipelineWires;
         ID_bpc = bpc;
+        ID_selpc = CTRL_UNIT.o_selpc;
         ID_da = da;
         ID_jpc = jpc;
-        ID_pcsrc = CTRL_UNIT.o_pcsrc;
-        ID_wpcir = CTRL_UNIT.o_wpcir;
-        
-        ID_EX.IR = IF_ID.IR;
+        // ID_pcsrc = (EX_cancel) ? 0b00: (CTRL_UNIT.o_pcsrc);// 紧接着exception的下一条是jr 
+        ID_pcsrc = CTRL_UNIT.o_pcsrc;// 紧接着exception的下一条是jr 
+        ID_wpcir = ( !CTRL_UNIT.o_stall );
+// The inverse of the stall signal is used as the write enable for the PC and the IF/ID pipeline register ( wpcir ).
+        ID_EX.IR = (EX_cancel) ? 0b00 : IF_ID.IR;
         ID_EX.ewreg = wreg;
         ID_EX.em2reg = m2reg;
         ID_EX.ewmem = wmem;
@@ -191,6 +237,7 @@ class MIPSX_SYSTEM
         ID_EX.emfc0 = CTRL_CP0_UNIT.o_mfc0;
         ID_EX.emfHI = CTRL_UNIT.o_mfHI;
         ID_EX.emfLO = CTRL_UNIT.o_mfLO;
+        ID_EX.ecancel = CTRL_CP0_UNIT.o_cancel;
         // printf("[%x %x %x %x]forwada %x %x %x %x ",da,db,rs,rt,fwda,qa,EX_ealu,MEM_malu,MEM_mmo);
         // x__err("ID stage rs%x rt%x %x ",rs,rt,db);
         ID_EX.ern0 = drn;
@@ -204,6 +251,7 @@ class MIPSX_SYSTEM
     {
         using namespace EXE_Signals;
         using namespace Multiplexer::EXEMUX;
+        using namespace CrossPipelineWires;
         clear_ex_temp_signals();
         // EX/MEM.IR ← ID/EX.IR;
         // EX/MEM.ALUOutput ←
@@ -213,6 +261,7 @@ class MIPSX_SYSTEM
         // ID/EX.A op ID/EX.Imm;
         epc8 = ID_EX.epc4 + 4;
         // ID_EX.ea;
+        EX_cancel = ID_EX.ecancel;
         sa = DECODE::get_shamt(ID_EX.eimm);
 
         setESHIFT_MUX(ID_EX.eshift,sa,ID_EX.ea);
@@ -275,7 +324,7 @@ class MIPSX_SYSTEM
     void MEM(pr::EX_MEM_t &EX_MEM, pr::MEM_WB_t &MEM_WB)
     {
         using namespace MEM_Signals;
-        // using namespace PipelineStall;
+        using namespace PipelineStall;
         using namespace CrossPipelineWires;
         clear_MEM_temp_signals();
         MEM_mrn = EX_MEM.mrn;
@@ -288,12 +337,7 @@ class MIPSX_SYSTEM
         using namespace Multiplexer::MEMMUX;
         setMWIDTH_MUX(storeload_width_sel);
         storeload_width = MWIDTH_MUX.o_load_store_width;
-        bool WriteMem = EX_MEM.mwmem;// if no stall
-        // MemWrite
-        // x__err("fuck mem:%x,alu%x,mb%x",EX_MEM.IR,MEM_malu,EX_MEM.mb);
-        // if(WriteMem)
-        //     x__err("%x",MEM_malu);
-
+        bool WriteMem = (!Stall) ? EX_MEM.mwmem : false;// if no stall
 
         if(WriteMem)
             memory.write_wrapper(MEM_malu,EX_MEM.mb,storeload_width);//memory.write<uint32_t>(MEM_malu,EX_MEM.mb);
@@ -341,6 +385,7 @@ class MIPSX_SYSTEM
 #define Regs gp.register_file
         using namespace WB_Signals;
         using namespace Multiplexer::WBMUX;
+        using namespace PipelineStall;
         clear_WB_temp_signals();
 //         using namespace PipelineStall;
 //         // Regs[MEM/WB.IR[rd]] ←
@@ -353,11 +398,13 @@ class MIPSX_SYSTEM
 //         WriteReg = WriteReg and (!Stall);
         setWM2REG_MUX(MEM_WB.wm2reg,MEM_WB.wmo,MEM_WB.walu);
         wdi = WM2REG_MUX.o_wdi;
-        if(MEM_WB.wwreg){            
+        bool WriteReg = (!Stall) ? MEM_WB.wwreg : false;
+        if(WriteReg){            
             gp.set_reg(MEM_WB.wrn,wdi);// Regs[MEM_WB.wrn] = wdi;
             //这样忽略写信号为真，而reg是$0的情况,(HI LO)相关的指令可能会发生这种情况
         }
-        if(MEM_WB.writeHILO){
+        bool WriteHiLo = (!Stall) ? MEM_WB.writeHILO : false;
+        if(WriteHiLo){
             HiLORegs::HI = mirror_hilo::mirror_hi;
             HiLORegs::LO = mirror_hilo::mirror_lo;
         }
@@ -372,21 +419,24 @@ class MIPSX_SYSTEM
         using namespace pipeline_registers;
         using namespace CrossPipelineWires;
         CrossPipelineWires::clearCrossPipelineWires();
+        using namespace PipelineStall;
         // x__log("%x\t",MEM_WB.debug_wbPC);
         if(flag)
             flag--;
-        if(!flag)
+        if(!flag && Log::log)
             printf("0x%08x ",MEM_WB.debug_wbPC);
-        if(!flag)
+        if(!flag && Log::log)
             printf("0x%08x",MEM_WB.IR);
         WB(MEM_WB, cpu.gp);
         MEM(EX_MEM, MEM_WB);
         EX(ID_EX, EX_MEM);
         ID(IF_ID, ID_EX);
         IF(Pre_IF, IF_ID);
-        
-        Pre_IF.PC = IF_npc;            
-        if(!flag)
+        if(!Stall)
+            Pre_IF.PC = next_pc;
+        // if(!flag&& Log::log)  
+        //     printf("%x ",Pre_IF.PC);         
+        if(!flag&& Log::log)
             printf("\n");
         
         // cpu.dump_regs();
