@@ -83,6 +83,7 @@ namespace CONTROL{
         bool o_wepc;/* cp0 reg 14 */
         uint32_t o_wcp0_regs_sel;/*选择　写信号*/
         bool o_mtc0;
+        bool o_rfe;
         uint32_t o_mfc0;
         uint32_t o_cause;
         uint32_t o_sepc;
@@ -103,6 +104,12 @@ namespace CONTROL{
                 x__err("unhandled cp0 TLBP");
                 break;
             case ins_RFE:// RFE
+// RFE Restore previous interrupt mask and mode bits of status register into current status
+// bits. Restore old status bits into previous status bits.
+                CTRL_CP0_UNIT.o_rfe = true;
+                // 其实这里并不需要改PC,Rfe不修改pc,它之前有jmp帮他返回
+                // CTRL_CP0_UNIT.o_cancel = true;// always cancel next inst, eret also
+                // CTRL_UNIT.o_selpc = 0b01;// selpc :   0b00:npc; 0b01:epc; 0b10:exc_base; 0b11 x
                 x__err("unhandled cp0 RFE");
                 break;
             case ins_TLBWI:// TLBWI
@@ -209,7 +216,13 @@ namespace CONTROL{
             rd_sel &= 0b11111;//32 cp0 regs
             R3000_CP0::cp0_regs.val[rd_sel] = writeData;// CPR[0, rd, sel] ← rt
         }
-        
+        using namespace R3000_CP0;
+        if(CTRL_CP0_UNIT.o_rfe){
+            uint32_t mode = cp0_regs.SR.raw & 0x3f;
+            cp0_regs.SR.raw &= ~0x3f;
+            cp0_regs.SR.raw |= mode >> 2; 
+        }
+
     }
     // rt ← CPR[0,rd,sel]
 
@@ -284,6 +297,7 @@ namespace CONTROL{
         CTRL_CP0_UNIT.o_cause = 0x0;
         CTRL_CP0_UNIT.o_sepc = 0;
         CTRL_CP0_UNIT.o_exc = false;
+        CTRL_CP0_UNIT.o_rfe = false;
     }
 
     void Control(){
@@ -403,9 +417,13 @@ namespace CONTROL{
                         CTRL_CP0_UNIT.o_exc = true;
                         CTRL_CP0_UNIT.o_cancel = true;
                         CTRL_UNIT.o_selpc = 0b10;// 00: npc; 01: epc; 10: exc_base
-                        // x__log("CTRL_UNIT.o_selpc%x",CTRL_UNIT.o_selpc);
                         CTRL_CP0_UNIT.o_cause = CP0_CauseReg_EXECODE_Field::SYS << 2;//syscall
-                        
+                        CTRL_CP0_UNIT.o_sepc = 0b01;// 0b00: pc; 0b01: pcd; 0b10: pce; 0b11: pcm
+                        // The PCD (the address of the syscall instruction) is saved into the EPC.
+// the syscall instruction saves its own address into the EPC and has no delay slot: its follow-up instruction is always canceled.
+                        CTRL_CP0_UNIT.o_wsta = true;// cp0 r12 status_reg
+                        CTRL_CP0_UNIT.o_wcau = true;// cp0 r13 cause_reg
+                        CTRL_CP0_UNIT.o_wepc = true;// cp0 r14 Exception Program Counter
                         break;
 
                     default:

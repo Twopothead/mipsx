@@ -64,14 +64,14 @@ class MIPSX_SYSTEM
         //     x__err("pcsrc %d %x %x %x %x",ID_pcsrc,pc4,ID_bpc,ID_da,ID_jpc);
         IF_npc = npc;
         IF_CP0_M::setNEXTPC_MUX(ID_selpc,\
-                IF_npc,R3000_CP0::cp0_regs.EPC,exception_handler_address);
+                IF_npc,R3000_CP0::cp0_regs.EPC+4,exception_handler_address);
         next_pc = IF_CP0_M::NEXTPC_MUX.o_next_pc;
         IF_ID.PCd = pc;
         // if(Log::log)
         //     x__err("%x %d %x %x %x ",pc,ID_selpc,IF_npc,R3000_CP0::cp0_regs.EPC,exception_handler_address);
     
         if(show_stage_log)
-            printf("IF %08x\t", IF_ID.IR);
+            printf("IF %08x\t", IF_ID.PCd);
         return;
     }
     void ID(pr::IF_ID_t &IF_ID, pr::ID_EX_t &ID_EX)
@@ -187,7 +187,8 @@ class MIPSX_SYSTEM
             cp0_regs.SR.raw = (cp0_regs.SR.raw & ~0x3f) | ( (cp0_regs.SR.raw<<2) & 0x3f );
             uint32_t code = Bitwise::extract(2,6,CTRL_CP0_UNIT.o_cause);// [ 6 : 2 ] EXECODE
             cp0_regs.CAUSE.raw = (cp0_regs.CAUSE.raw & 0x7f) | ( ( (code)<<2 ) & 0x7f ) ;
-            R3000_CP0::cp0_regs.EPC;// sepc mux select 
+            R3000_CP0::cp0_regs.EPC = cp0_epcin;// sepc mux select
+            printf("next %x ",R3000_CP0::cp0_regs.EPC ); 
         }
 
             

@@ -32,6 +32,7 @@ namespace Multiplexer{
 
         }
         namespace IF_CP0_M{
+// selpc :   0b00:npc; 0b01:epc; 0b10:exc_base; 0b11 x
             struct {
                 uint32_t npc;
                 uint32_t epc;
@@ -138,6 +139,11 @@ namespace Multiplexer{
                 }
         }
         namespace ID_CP0_M{
+// sel epc: id is_branch     eis_branch     mis_branch      others
+// exc_int      PCD (01)        PC (00)     PC (00)         PC (00)
+// exc_sys      x               x           PCD (01)        PCD (01)
+// exc_uni      x               x           PCD (01)        PCD (01)
+// exc_ovr      x               x           PCM (11)        PCE (10)
             struct SEPC_MUX_t{
                 uint32_t pc;
                 uint32_t pcd;
