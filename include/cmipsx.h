@@ -12,12 +12,14 @@
 #include "debug.h"
 #include "cp0.h"
 #include "forward.h"
+#include <iostream>
 
 namespace pr = pipeline_registers;
 bool show_stage_log = false;
 int flag = 5;
 namespace Log{
     bool log = false;
+    bool xxx = 1;
 }
 class MIPSX_SYSTEM
 {
@@ -31,6 +33,8 @@ class MIPSX_SYSTEM
         pipeline_registers::clear_pipeline_registers();
         memset(&R3000_CP0::cp0_regs,0,sizeof(R3000_CP0::cp0_regs));
         pipeline_registers::Pre_IF.PC = start_Rom;
+        // The Nocash spec says that the reset value for the control register is 0x07654321 which means that all channels are disabled and the priority increases with the channel number
+        DMA::DPCR= 0x07654321;
     };
     friend class Monitor;
     void IF(pr::Pre_IF_t &Pre_IF, pr::IF_ID_t &IF_ID)
@@ -119,8 +123,6 @@ class MIPSX_SYSTEM
         Control();
         if(CTRL_CP0_UNIT.o_cancel){
             CTRL_UNIT.o_pcsrc = 0b00;
-            // PipelineStall::Stall = true;
-            printf(" cancel ");
         }
 
         // if(Log::log)
@@ -151,27 +153,8 @@ class MIPSX_SYSTEM
            dimm = zero_extend(imm);
         bpc = calcu_bpc(dpc4,shift_left_2(dimm));
         jpc = calcu_jpc(dpc4,addr);
-
-        // if(IF_ID.IR ==0x0061001a)
-        //     while(1){
-        //         ;
-        //     }
-            
-            // x__err("");
-        
         ID_CP0_M::setSEPC_MUX(CTRL_CP0_UNIT.o_sepc,IF_pc,ID_pcd,EX_pce,MEM_pcm);
         cp0_epcin = ID_CP0_M::SEPC_MUX.o_epcin;
-
-        // if(IF_ID.IR ==0x1ca00003)
-        //     x__err("%x %x %x %x",CTRL_UNIT.i_rsGTZ,bpc,CTRL_CP0_UNIT.o_sepc);
-
-//         mux2x32 sta_mx (stalr,db,mtc0,sta_in);
-// // mux for status reg
-// mux2x32 cau_mx (cause,db,mtc0,cau_in);
-//CTRL_CP0_UNIT.o_cause,db,CTRL_CP0_UNIT.o_mtc0,cau_in )
-// // mux for cause reg
-// mux2x32 epc_mx (epcin,db,mtc0,epc_in);
-// // mux for epc reg
         cp0_operations(db);// CPR[0, rd, sel] ← rt
         if(CTRL_UNIT.o_mfHI|CTRL_UNIT.o_mfLO|CTRL_UNIT.o_mtHI|CTRL_UNIT.o_mtLO\
          |CTRL_UNIT.o_aluc==ALU_DIV|CTRL_UNIT.o_aluc==ALU_DIVU\
@@ -187,8 +170,7 @@ class MIPSX_SYSTEM
             cp0_regs.SR.raw = (cp0_regs.SR.raw & ~0x3f) | ( (cp0_regs.SR.raw<<2) & 0x3f );
             uint32_t code = Bitwise::extract(2,6,CTRL_CP0_UNIT.o_cause);// [ 6 : 2 ] EXECODE
             cp0_regs.CAUSE.raw = (cp0_regs.CAUSE.raw & 0x7f) | ( ( (code)<<2 ) & 0x7f ) ;
-            R3000_CP0::cp0_regs.EPC = cp0_epcin;// sepc mux select
-            printf("next %x ",R3000_CP0::cp0_regs.EPC ); 
+            R3000_CP0::cp0_regs.EPC = cp0_epcin;
         }
 
             
@@ -415,6 +397,16 @@ class MIPSX_SYSTEM
             printf("WB %08x\t", MEM_WB.IR);
         return;
     }
+    void hack_intercept_BIOS_Putchar(){
+    // Hack: intercept putchar bios call for console logging
+    // print "Licenced by..." stuff  
+    // Copyright 1993,1994 (C) Sony Computer Entertainment Inc.
+        using namespace pipeline_registers;
+        if( (MEM_WB.debug_wbPC==0xa0 && cpu.gp.R09_T1 == 0x3c ) 
+            || (MEM_WB.debug_wbPC==0xb0 && cpu.gp.R09_T1==0x3d)){
+            std::cout<<(char)cpu.gp.R04_A0;
+        }
+    }
     void tick()
     {
         using namespace pipeline_registers;
@@ -425,9 +417,11 @@ class MIPSX_SYSTEM
         if(flag)
             flag--;
         if(!flag && Log::log)
-            printf("0x%08x ",MEM_WB.debug_wbPC);
+                printf("0x%08x ",MEM_WB.debug_wbPC);
         if(!flag && Log::log)
-            printf("0x%08x",MEM_WB.IR);
+                printf("0x%08x",MEM_WB.IR);
+ 
+
         WB(MEM_WB, cpu.gp);
         MEM(EX_MEM, MEM_WB);
         EX(ID_EX, EX_MEM);
@@ -436,9 +430,11 @@ class MIPSX_SYSTEM
         if(!Stall)
             Pre_IF.PC = next_pc;
         // if(!flag&& Log::log)  
-        //     printf("%x ",Pre_IF.PC);         
+        //     printf("%x ",Pre_IF.PC);
         if(!flag&& Log::log)
-            printf("\n");
+                    printf("\n"); 
+        hack_intercept_BIOS_Putchar();
+ 
         
         // cpu.dump_regs();
     }

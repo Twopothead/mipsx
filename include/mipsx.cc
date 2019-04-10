@@ -5,7 +5,8 @@
 #include <stdlib.h>
 #include "cmipsx.h"
 #include "monitor.h"
-
+// http://emulation.gametechwiki.com/index.php/PS1_Tests
+// PS1 Test:https://psx.amidog.se/doku.php?id=psx:download:misc
 
 int main()
 {
@@ -35,6 +36,7 @@ int main()
      // sets bit 16 of SR which is the “isolate cache” bit. It makes all the following read
     // and write target directly the cache instead of going through it towards the main
      //memory.
+     // [2725556] read 1f8010f0
     MIPSX_SYSTEM psx;
     Monitor monitor(psx);
     int i=0;
@@ -49,17 +51,28 @@ int main()
     //      [2695835] 0x00001014 0x42000010
     //      [2695836] 0xbfc0d968 0x03e00008
 
-    // for(int i=-3;i<=2695642;i++)
-    // for(int i=-3;i<=2695660;i++)
-    for(int i=-3;i<=2695840;i++)
+    // for(int i=-3;i<=2725560;i++)
+    //  for(int i=-3;i<=2749067;i++)
+    for(int i=-3;i<=2725570;i++)
+    // for(int i=-3;i<=2695840;i++)
     {
-        if(i>2695635){
-            printf("[%06d] ",i);
-            Log::log = true;
-        }
+        // if(i==2695643){
+        //     Log::xxx -=1;
+        //     if(Log::xxx)
+        //         Log::log = false;
+        //     else    
+        //         Log::log = true;
+        // }
+            
+        // if(i>2725550 ){
+        //     printf("[%06d] ",i);
+        //     Log::log = true;
+        // }
             
         psx.tick();
-        // if(i>0)
+
+
+        // if(i>2725550)
         //     monitor.showStatus();
     }
     

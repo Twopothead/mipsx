@@ -108,9 +108,7 @@ namespace CONTROL{
 // bits. Restore old status bits into previous status bits.
                 CTRL_CP0_UNIT.o_rfe = true;
                 // 其实这里并不需要改PC,Rfe不修改pc,它之前有jmp帮他返回
-                // CTRL_CP0_UNIT.o_cancel = true;// always cancel next inst, eret also
-                // CTRL_UNIT.o_selpc = 0b01;// selpc :   0b00:npc; 0b01:epc; 0b10:exc_base; 0b11 x
-                x__err("unhandled cp0 RFE");
+                // x__err("unhandled cp0 RFE");
                 break;
             case ins_TLBWI:// TLBWI
                 x__err("unhandled cp0 TLBWI");
@@ -351,21 +349,21 @@ namespace CONTROL{
                         break;
 
                     case 0b000000:/* sll */
-                        CTRL_UNIT.o_shift = true;
+                        CTRL_UNIT.o_shift = true;// come from immediate
                         ALUOP = ALU_SLL;
                         break;
                     case 0b000100:/* sllv */
                         ALUOP = ALU_SLL;
                         break;
                     case 0b000011:/* sra */
-                        CTRL_UNIT.o_shift = true;
+                        CTRL_UNIT.o_shift = true;// come from immediate
                         ALUOP = ALU_SRA;
                         break;
                     case 0b000111:/* srav */
                         ALUOP = ALU_SRA;
                         break;
                     case 0b000010:/* srl */
-                        CTRL_UNIT.o_shift = true; 
+                        CTRL_UNIT.o_shift = true;// come from immediate 
                         ALUOP = ALU_SRL;
                         break;
                     case 0b000110:/* srlv */
@@ -424,6 +422,7 @@ namespace CONTROL{
                         CTRL_CP0_UNIT.o_wsta = true;// cp0 r12 status_reg
                         CTRL_CP0_UNIT.o_wcau = true;// cp0 r13 cause_reg
                         CTRL_CP0_UNIT.o_wepc = true;// cp0 r14 Exception Program Counter
+// In our implementation, it is not allowed to put the syscall instruction in a delay slot.
                         break;
 
                     default:
@@ -619,6 +618,7 @@ namespace CONTROL{
                         CTRL_UNIT.o_aluimm = true;
                         CTRL_UNIT.o_wreg = true;
                         ALUOP = ALU_XOR;
+                        // GPR[rt] ← GPR[rs] xor zero_extend(immediate)
                         break;
                     default:
                         break;

@@ -70,9 +70,11 @@ namespace ALU{
                 aluResult = (src1 & src2);
                 break;
             case ALU_SRA:// rd ← rt >> sa
+                src1 &= 0x1f; // rd ← rt >> rs (arithmetic)
                 aluResult = ((int32_t)src2)>>src1;// sra(src2,src1);
                 break;
             case ALU_SRL:// rd ← rt >> sa (logical)
+                src1 &= 0x1f;
                 aluResult = ((uint32_t)src2)>>src1;// srl(src2,src1)
                 break;
             case ALU_SUBU:
@@ -80,6 +82,9 @@ namespace ALU{
                 break;
             case ALU_SUB:
                 aluResult = src1 - src2;// if overflow,exception
+                break;
+            case ALU_NOR:
+                aluResult = ~(src1|src2);
                 break;
               // branch的条件应该在ID阶段算出，不应留到EX阶段
             // case ALU_DIV:

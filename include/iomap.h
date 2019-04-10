@@ -2,6 +2,7 @@
 #include <inttypes.h>
 #include "debug.h"
 #include "timers.h"
+#include "dma.h"
 namespace RW{
     void io_custom_write(uint32_t addr,uint32_t base_addr,uint32_t *pbase,uint32_t data,int width){
             uint32_t offset = addr - base_addr;//addr - 0x1f801d80;
@@ -199,6 +200,9 @@ uint32_t io_read(uint32_t vaddr,int width){
             case 0x1f801000 ... 0x1f801020:
                 data = Memory_Control_1::read(vaddr,width);
                 break;
+            case 0x1f801080 ... 0x1f8010ff:
+                data = DMA::read(vaddr,width);
+                break;
             case 0x1f801060:
                 data = Memory_Control_2::read(vaddr,width);
                 break;
@@ -242,6 +246,9 @@ void io_write(uint32_t vaddr,uint32_t data,int width){
                 break;
             case 0x1f801070 ... 0x1f801074:
                 Interrupt_Control::write(vaddr,data,width);
+                break;
+            case 0x1f801080 ... 0x1f8010ff:
+                DMA::write(vaddr,data,width);
                 break;
             case 0x1f801100 ... 0x1f80110f:// Timer 0
             case 0x1f801110 ... 0x1f80111f:// Timer 1
