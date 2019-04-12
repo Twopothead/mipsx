@@ -99,3 +99,29 @@ namespace ForwardingUnit{
         //     forwardB = 0b11;// select mem_lw
         // }
 
+// http://www.cs.cornell.edu/courses/cs3410/2013sp/lecture/10-control-hazards-w-g.pdf
+// Memory Load Data Hazard
+// Load Data Hazard
+// • Value not available until WB stage
+// • So: next instruction can’t proceed if hazard detected
+// Resolution:
+// • MIPS 2000/3000: one delay slot
+// – ISA says results of loads are not available until one cycle later
+// – Assembler inserts nop, or reorders to fill delay slot
+// • MIPS 4000 onwards: stall
+// – But really, programmer/compiler reorders to avoid stalling in
+// the load delay slot
+// For stall, how to detect? Logic in ID Stage
+// – Stall
+// = ID/Ex.MemRead &&
+// (IF/ID.Ra == ID/Ex.Rd || IF/ID.Rb == ID/Ex.Rd)
+// 33
+// Data Hazard Recap
+// Delay Slot(s)
+// • Modify ISA to match implementation
+// Stall
+// • Pause current and all subsequent instructions
+// Forward/Bypass
+// • Try to steal correct value from elsewhere in pipeline
+// • Otherwise, fall back to stalling or require
+// a delay slot

@@ -1,3 +1,5 @@
+CC = gcc
+CXX = g++
 .PHONY:all clean
 
 SOURCES := $(shell find src -name "*.cc")

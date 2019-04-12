@@ -10,6 +10,7 @@
 #include "mul.h"
 #include "div.h"
 #include "cpu.h"
+#include "dma.h"
 namespace PipelineStall{
     using namespace pipeline_registers;
     bool Stall = false;
@@ -424,7 +425,16 @@ namespace CONTROL{
                         CTRL_CP0_UNIT.o_wepc = true;// cp0 r14 Exception Program Counter
 // In our implementation, it is not allowed to put the syscall instruction in a delay slot.
                         break;
-
+                    case 0b001101:/* break*/
+                        CTRL_CP0_UNIT.o_exc = true;
+                        CTRL_CP0_UNIT.o_cancel = true;
+                        CTRL_UNIT.o_selpc = 0b10;
+                        CTRL_CP0_UNIT.o_cause = CP0_CauseReg_EXECODE_Field::BP << 2;
+                        CTRL_CP0_UNIT.o_sepc = 0b01;
+                        CTRL_CP0_UNIT.o_wsta = true;
+                        CTRL_CP0_UNIT.o_wcau = true;
+                        CTRL_CP0_UNIT.o_wepc = true;                        
+                        break;
                     default:
                         break;
                 }//funct switch end 
@@ -448,6 +458,12 @@ namespace CONTROL{
                 CTRL_UNIT.o_sext = true;
                 CTRL_UNIT.o_sl_width_sel = 0b10;// select byte width 8
                 break;
+            // case 0b100010:/* lwl */
+
+            //     break;
+            // case 0b100110:/* lwr */
+
+            //     break;
             case 0b100100:/* lbu */
                 ALUOP = ALU_ADD;
                 CTRL_UNIT.o_regrt = true;

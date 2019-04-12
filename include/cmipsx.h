@@ -12,6 +12,7 @@
 #include "debug.h"
 #include "cp0.h"
 #include "forward.h"
+#include "dma.h"
 #include <iostream>
 
 namespace pr = pipeline_registers;
@@ -21,6 +22,7 @@ namespace Log{
     bool log = false;
     bool xxx = 1;
 }
+
 class MIPSX_SYSTEM
 {
     R3000A_CPU cpu;
@@ -34,7 +36,8 @@ class MIPSX_SYSTEM
         memset(&R3000_CP0::cp0_regs,0,sizeof(R3000_CP0::cp0_regs));
         pipeline_registers::Pre_IF.PC = start_Rom;
         // The Nocash spec says that the reset value for the control register is 0x07654321 which means that all channels are disabled and the priority increases with the channel number
-        DMA::DPCR= 0x07654321;
+        // DMA::DPCR= 0x07654321;
+        DMA::dpcr.raw = 0x07654321;
     };
     friend class Monitor;
     void IF(pr::Pre_IF_t &Pre_IF, pr::IF_ID_t &IF_ID)
@@ -416,11 +419,15 @@ class MIPSX_SYSTEM
         // x__log("%x\t",MEM_WB.debug_wbPC);
         if(flag)
             flag--;
-        if(!flag && Log::log)
-                printf("0x%08x ",MEM_WB.debug_wbPC);
+        if(!flag && Log::log){
+            printf("[%06d] ",mipsx_cycle);
+            printf("0x%08x ",MEM_WB.debug_wbPC);
+        }
+                
         if(!flag && Log::log)
                 printf("0x%08x",MEM_WB.IR);
- 
+        // if(MEM_WB.IR==0x88c10003)
+        //     x__err("cycle:%d",mipsx_cycle);
 
         WB(MEM_WB, cpu.gp);
         MEM(EX_MEM, MEM_WB);
@@ -429,11 +436,13 @@ class MIPSX_SYSTEM
         IF(Pre_IF, IF_ID);
         if(!Stall)
             Pre_IF.PC = next_pc;
-        // if(!flag&& Log::log)  
-        //     printf("%x ",Pre_IF.PC);
+
+
         if(!flag&& Log::log)
                     printf("\n"); 
-        hack_intercept_BIOS_Putchar();
+           
+        // hack_intercept_BIOS_Putchar();
+           
  
         
         // cpu.dump_regs();
