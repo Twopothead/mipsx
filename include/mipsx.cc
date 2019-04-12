@@ -50,39 +50,67 @@ int recode_cycle = 20;
 // GPR20: s4 00000000 s5 800dea68 s6 00000001 s7 00000000
 // GPR24: t8 0000dff1 t9 1f801c00 k0 8005aa18 k1 00000f1c
 // GPR28: gp a0010ff0 sp 801ffc28 s8 00000024 ra 80052fe0
+// 前200000个里面，寄存器确保都正确
+// 到19246571，寄存器都正确
+// 24502251 0x88c10003
+// OK [19202245] 0x80054168 0x030fc023
+// [19222245] 0x80054178 0x27280001
+// OK [19248870] 0x00000c84 0x00000000
+// [19282255] 0x80059e08 0x0105082a
+// 19258608可能是分界
+// [19258626] 0xbfc04168 0x1720000e还是正确的
 int main()
 {
     MIPSX_SYSTEM psx;
     Monitor monitor(psx); 
-    //  const int total_cycle = 19246560;
-    // const int total_cycle = 19246567;
-    // const int total_cycle = 25000000;
-    // const int total_cycle = 24502246;
-    // 死在T=19246567
-    // const int total_cycle = 19246540;
-    const int total_cycle =19246562;
-    for( mipsx_cycle=-3;mipsx_cycle<=total_cycle+1;mipsx_cycle++)
+    const int total_cycle =19258619;
+    for( mipsx_cycle=-2;mipsx_cycle<=total_cycle+1;mipsx_cycle++)
     {   
-        psx.tick();
-        
-        // if(mipsx_cycle>=19246564){
-        // if(mipsx_cycle>=19246550){
-        // if(mipsx_cycle>=19246530){
-            // if(mipsx_cycle>=19246119){
-            if(mipsx_cycle>=19246530){
+        if(mipsx_cycle>=19258618){
             Log::log = true;
-             monitor.showStatus();
         }
-        
-           
-
-        // if(mipsx_cycle>=2766783)
-        //     monitor.showStatus();
+        psx.tick();
+        if(Log::log)
+            monitor.showStatus();
     }
+    x__err("[19258618] 0x8cce0000	lw  R14, [R06 + 0x0]\n这里出错了,此时R14是0x1f801814,这里是从GPU加载状态,然而,现在GPU没有实现");
     
    
     return 0;
 }
+//真正出错的地方在19258628,以下为正解
+// 	0x8cce0000	lw  R14, [R06 + 0x0]
+// 1f801814关键是GPU GP0的相关指令没有implement
+// [19258626] 0xbfc04168 0x1720000e
+// PSX HI=0x0000066d LO=0x00000594
+// GPR00: r0 00000000 at 60000000 v0 00000000 v1 10000000
+// GPR04: a0 10000000 a1 80050dac a2 1f801814 a3 00000008
+// GPR08: t0 bfc03fac t1 00000124 t2 000000a0 t3 00000009
+// GPR12: t4 00000023 t5 0000002b t6 1c802000 t7 00000000
+// GPR16: s0 00000000 s1 00000000 s2 00000000 s3 00000000
+// GPR20: s4 00000000 s5 00000000 s6 00000000 s7 00000000
+// GPR24: t8 1c802000 t9 10000000 k0 8005aa18 k1 00000f1c
+// GPR28: gp a0010ff0 sp 801ffce8 s8 801fff00 ra bfc03fbc
+// [19258627] 0xbfc0416c 0x00000000
+// PSX HI=0x0000066d LO=0x00000594
+// GPR00: r0 00000000 at 60000000 v0 00000000 v1 10000000
+// GPR04: a0 10000000 a1 80050dac a2 1f801814 a3 00000008
+// GPR08: t0 bfc03fac t1 00000124 t2 000000a0 t3 00000009
+// GPR12: t4 00000023 t5 0000002b t6 1c802000 t7 00000000
+// GPR16: s0 00000000 s1 00000000 s2 00000000 s3 00000000
+// GPR20: s4 00000000 s5 00000000 s6 00000000 s7 00000000
+// GPR24: t8 1c802000 t9 10000000 k0 8005aa18 k1 00000f1c
+// GPR28: gp a0010ff0 sp 801ffce8 s8 801fff00 ra bfc03fbc
+// [19258628] 0xbfc041a4 0x1000002a
+// PSX HI=0x0000066d LO=0x00000594
+// GPR00: r0 00000000 at 60000000 v0 00000000 v1 10000000
+// GPR04: a0 10000000 a1 80050dac a2 1f801814 a3 00000008
+// GPR08: t0 bfc03fac t1 00000124 t2 000000a0 t3 00000009
+// GPR12: t4 00000023 t5 0000002b t6 1c802000 t7 00000000
+// GPR16: s0 00000000 s1 00000000 s2 00000000 s3 00000000
+// GPR20: s4 00000000 s5 00000000 s6 00000000 s7 00000000
+// GPR24: t8 1c802000 t9 10000000 k0 8005aa18 k1 00000f1c
+// GPR28: gp a0010ff0 sp 801ffce8 s8 801fff00 ra bfc03fbc
 
 // PS-X Realtime Kernel Ver.2.5
 // Copyright 1993,1994 (C) Sony Computer Entertainment Inc. 

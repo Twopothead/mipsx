@@ -17,7 +17,6 @@
 
 namespace pr = pipeline_registers;
 bool show_stage_log = false;
-int flag = 5;
 namespace Log{
     bool log = false;
     bool xxx = 1;
@@ -274,9 +273,9 @@ class MIPSX_SYSTEM
         ealu = ELinkmfc0_MUX.o_ealu;
         
         if(ID_EX.emfHI)
-            ealu = HiLORegs::HI;
+            ealu = mirror_hilo::mirror_hi;
         if(ID_EX.emfLO)
-            ealu = HiLORegs::LO;
+            ealu = mirror_hilo::mirror_lo;
 
 
         if(ID_EX.ejal)
@@ -417,16 +416,8 @@ class MIPSX_SYSTEM
         CrossPipelineWires::clearCrossPipelineWires();
         using namespace PipelineStall;
         // x__log("%x\t",MEM_WB.debug_wbPC);
-        if(flag)
-            flag--;
-        if(!flag && Log::log){
-            printf("[%06d] ",mipsx_cycle);
-            printf("0x%08x ",MEM_WB.debug_wbPC);
-        }
-                
-        if(!flag && Log::log)
-                printf("0x%08x",MEM_WB.IR);
-        // if(MEM_WB.IR==0x88c10003)
+
+        // if(MEM_WB.IR==0x01a52806)
         //     x__err("cycle:%d",mipsx_cycle);
 
         WB(MEM_WB, cpu.gp);
@@ -437,8 +428,14 @@ class MIPSX_SYSTEM
         if(!Stall)
             Pre_IF.PC = next_pc;
 
-
-        if(!flag&& Log::log)
+        if(mipsx_cycle>0 && Log::log){
+            printf("[%06d] ",mipsx_cycle);
+            printf("0x%08x ",MEM_WB.debug_wbPC);
+        }
+                
+        if(mipsx_cycle>0 && Log::log)
+                printf("0x%08x",MEM_WB.IR);
+        if(mipsx_cycle>0 && Log::log)
                     printf("\n"); 
            
         // hack_intercept_BIOS_Putchar();

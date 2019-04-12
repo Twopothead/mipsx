@@ -107,8 +107,7 @@ namespace CONTROL{
             case ins_RFE:// RFE
 // RFE Restore previous interrupt mask and mode bits of status register into current status
 // bits. Restore old status bits into previous status bits.
-                CTRL_CP0_UNIT.o_rfe = true;
-                // 其实这里并不需要改PC,Rfe不修改pc,它之前有jmp帮他返回
+                CTRL_CP0_UNIT.o_rfe = true;// 其实这里并不需要改PC,Rfe不修改pc,它之前有jmp帮他返回
                 // x__err("unhandled cp0 RFE");
                 break;
             case ins_TLBWI:// TLBWI
@@ -458,9 +457,13 @@ namespace CONTROL{
                 CTRL_UNIT.o_sext = true;
                 CTRL_UNIT.o_sl_width_sel = 0b10;// select byte width 8
                 break;
-            // case 0b100010:/* lwl */
-
-            //     break;
+            case 0b100010:/* lwl */
+                x__err("fuck lwl %d",mipsx_cycle);
+                exit(0);
+                // while(1){
+                //     ;/* code */
+                // }
+                break;
             // case 0b100110:/* lwr */
 
             //     break;
@@ -633,6 +636,7 @@ namespace CONTROL{
                         CTRL_UNIT.o_regrt = true;
                         CTRL_UNIT.o_aluimm = true;
                         CTRL_UNIT.o_wreg = true;
+                        // x__err("xorri %d",mipsx_cycle);
                         ALUOP = ALU_XOR;
                         // GPR[rt] ← GPR[rs] xor zero_extend(immediate)
                         break;

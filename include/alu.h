@@ -86,6 +86,9 @@ namespace ALU{
             case ALU_NOR:
                 aluResult = ~(src1|src2);
                 break;
+            case ALU_XOR:
+                aluResult = src1 ^ src2;
+                break;
               // branch的条件应该在ID阶段算出，不应留到EX阶段
             // case ALU_DIV:
             //     aluResult;
