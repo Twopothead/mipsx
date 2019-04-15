@@ -1,5 +1,6 @@
 #pragma once
 #include <inttypes.h>
+#include "debug.h"
 int mipsx_cycle =0;
 namespace DMA_TOOLS{
     typedef enum {
@@ -46,6 +47,26 @@ namespace DMA_TOOLS{
         uint32_t raw = 0x00000000;
     }DICR_t;
 
+    typedef union { //1F801080h+N*10h - D#_MADR - DMA base address (Channel 0..6) (R/W)
+        struct {
+            uint32_t addr:24;    //   0-23  Memory Address where the DMA will start reading from/writing to
+            uint32_t :8;            //  24-31 Not used (always zero)
+        };
+        uint32_t raw;
+    }D_MADR_t;
+
+    typedef union{// 1F801084h+N*10h - D#_BCR - DMA Block Control (Channel 0..6) (R/W)
+        struct {                    // For SyncMode=0 (ie. for OTC and CDROM):
+            uint32_t wordCount:16;  // 0-15  BC    Number of words (0001h..FFFFh) (or 0=10000h words)
+            uint32_t :16;           //   16-31 0     Not used (usually 0 for OTC, or 1 ("one block") for CDROM)
+        }syncMode0;
+        struct {                    // For SyncMode=1 (ie. for MDEC, SPU, and GPU-vram-data):
+            uint32_t blockSize:16;  //   0-15  BS    Blocksize (words) ;for GPU/SPU max 10h, for MDEC max 20h
+            uint32_t blockCount:16; //   16-31 BA    Amount of blocks  ;ie. total length = BS*BA words
+        }syncMode1;
+        uint32_t raw;
+    }D_BCR_t;
+    
     typedef union{// 1F801088h+N*10h - D#_CHCR - DMA Channel Control (Channel 0..6) (R/W)
         struct{//intel x86 little endian
             uint32_t direction:1; // 0   transfer direction: RAM-to-device(0) or device-to-RAM(1)
@@ -65,6 +86,8 @@ namespace DMA_TOOLS{
         };
         uint32_t raw;
     }D_CHCR_t;
+
+    
     
 }
 
@@ -74,11 +97,12 @@ namespace DMA{
     DPCR_t dpcr;// 1f8010f0h DPCR - DMA Control register
     DICR_t dicr;// 1f8010f4h DICR - DMA Interrupt register
     struct Channel_t{
-        uint32_t address;
-        uint32_t counter;
-        uint32_t control;
+        D_MADR_t address;
+        D_BCR_t counter;
+        D_CHCR_t control;
     };
-    Channel_t channels[3];
+    Channel_t channels[7];
+
     uint32_t get_DMA_channelindex(uint32_t vaddr){
         return (vaddr>>4) & 0b111;// 0...6 DMA ports
     }
@@ -93,13 +117,13 @@ namespace DMA{
             switch (get_DMA_regindex(vaddr))
             {
                 case 0:// 0x1f801080 0x1f801090 0x1f8010a0 0x1f8010b0 0x1f8010c0 0x1f8010d0 0x1f8010e0
-                    data = channels[channel_index].address; 
+                    data = channels[channel_index].address.raw; 
                     break;
                 case 1:// 0x1f801084 0x1f801094 0x1f8010a4 0x1f8010b4 0x1f8010c4 0x1f8010d4 0x1f8010e4
-                    data = channels[channel_index].counter;
+                    data = channels[channel_index].counter.raw;
                     break;
                 case 2:// 0x1f801088 0x1f801098 0x1f8010a0 0x1f8010b8 0x1f8010c8 0x1f8010d8 0x1f8010e8
-                    data = channels[channel_index].control;
+                    data = channels[channel_index].control.raw;
                     break;            
                 default:
                     break;
@@ -162,13 +186,13 @@ namespace DMA{
             switch (get_DMA_regindex(vaddr))
             {
                 case 0:// 0x1f801080 0x1f801090 0x1f8010a0 0x1f8010b0 0x1f8010c0 0x1f8010d0 0x1f8010e0
-                    channels[channel_index].address = data & 0x00ffffff; 
+                    channels[channel_index].address.raw = data & 0x00ffffff; 
                     break;
                 case 1:// 0x1f801084 0x1f801094 0x1f8010a4 0x1f8010b4 0x1f8010c4 0x1f8010d4 0x1f8010e4
-                    channels[channel_index].counter = data & 0xffffffff;
+                    channels[channel_index].counter.raw = data & 0xffffffff;
                     break;
                 case 2:// 0x1f801088 0x1f801098 0x1f8010a0 0x1f8010b8 0x1f8010c8 0x1f8010d8 0x1f8010e8
-                    channels[channel_index].control = data;
+                    channels[channel_index].control.raw = data & 0x71770703;
                     break;            
                 default:
                     x__err("io DMA write error: addr:%x data:%x",vaddr,data);
@@ -176,5 +200,29 @@ namespace DMA{
             }
         }
         return;
+    }
+
+    void dma_main(){
+        if(dpcr.enableOTC){
+            if(channels[6].control.raw=0x11000002){
+                // do
+                channels[6].control.raw &= ~0x01000000;
+            }
+        }
+        if(dpcr.enablePIO){
+
+        }
+        if(dpcr.enableSPU){
+
+        }
+        if(dpcr.enableGPU){
+
+        }
+        if(dpcr.enableMDECout){
+
+        }
+        if(dpcr.enableMDECin){
+            
+        }
     }
 }

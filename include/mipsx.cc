@@ -59,21 +59,54 @@ int recode_cycle = 20;
 // [19282255] 0x80059e08 0x0105082a
 // 19258608可能是分界
 // [19258626] 0xbfc04168 0x1720000e还是正确的
+
+//出错在19259713
+// 19259715 已经错了
+// 又是从IO地址1f8010e8加载 归根结底的DMA 的OTC没实现
+// Commonly used DMA Control Register values for starting DMA transfers   DMA6 OTC      11000002h (always)
+//   1F8010Exh      DMA6 channel 6 - OTC (reverse clear OT) (GPU related)
+// 0x8d8d0000	lw  R13, [R12 + 0x0]
+// [19259688]时存进去 [19259688] 0x8005023c 0xac600000 0xac600000	sw  R00, [R03 + 0x0]
+// [19259699]写入 是DMA 做完DMA的事后要         (OTC)channels[6].control.raw &= ~0x01000000;
+// [19259710] 0x8005027c 0x8d8d0000
+// PSX HI=0x0000066d LO=0x00000594
+// GPR00: r0 00000000 at 800e0000 v0 1f8010f0 v1 1f8010e8
+// GPR04: a0 800ea8d8 a1 00000400 a2 00000000 a3 00000280
+// GPR08: t0 800eb8d4 t1 1f8010e0 t2 1f8010e4 t3 11000002
+// GPR12: t4 1f8010e8 t5 0000000a t6 00000000 t7 000000f0
+// GPR16: s0 01000000 s1 00000004 s2 00000000 s3 00000000
+// GPR20: s4 00000000 s5 00000000 s6 00000000 s7 00000000
+// GPR24: t8 00001000 t9 800eb8d8 k0 8005aa18 k1 00000f1c
+// GPR28: gp a0010ff0 sp 801ffd10 s8 801fff00 ra 80050270
+// [19259711] 0x80050280 0x00000000
+// PSX HI=0x0000066d LO=0x00000594
+// GPR00: r0 00000000 at 800e0000 v0 1f8010f0 v1 1f8010e8
+// GPR04: a0 800ea8d8 a1 00000400 a2 00000000 a3 00000280
+// GPR08: t0 800eb8d4 t1 1f8010e0 t2 1f8010e4 t3 11000002
+// GPR12: t4 1f8010e8 t5 10000002 t6 00000000 t7 000000f0
+// GPR16: s0 01000000 s1 00000004 s2 00000000 s3 00000000
+// GPR20: s4 00000000 s5 00000000 s6 00000000 s7 00000000
+// GPR24: t8 00001000 t9 800eb8d8 k0 8005aa18 k1 00000f1c
+// GPR28: gp a0010ff0 sp 801ffd10 s8 801fff00 ra 80050270
+
 int main()
 {
     MIPSX_SYSTEM psx;
     Monitor monitor(psx); 
-    const int total_cycle =19258619;
+    //19259691
+     const int total_cycle =19259715;
+    // const int total_cycle =19259715;
     for( mipsx_cycle=-2;mipsx_cycle<=total_cycle+1;mipsx_cycle++)
     {   
-        if(mipsx_cycle>=19258618){
+        // if(mipsx_cycle>=19259710){
+        if(mipsx_cycle>=19259710){
             Log::log = true;
         }
         psx.tick();
         if(Log::log)
             monitor.showStatus();
     }
-    x__err("[19258618] 0x8cce0000	lw  R14, [R06 + 0x0]\n这里出错了,此时R14是0x1f801814,这里是从GPU加载状态,然而,现在GPU没有实现");
+    //x__err("[19258618] 0x8cce0000	lw  R14, [R06 + 0x0]\n这里出错了,此时R14是0x1f801814,这里是从GPU加载状态,然而,现在GPU没有实现");
     
    
     return 0;

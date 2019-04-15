@@ -14,7 +14,7 @@
 #include "forward.h"
 #include "dma.h"
 #include <iostream>
-
+#include "gpu.h"
 namespace pr = pipeline_registers;
 bool show_stage_log = false;
 namespace Log{
@@ -37,6 +37,7 @@ class MIPSX_SYSTEM
         // The Nocash spec says that the reset value for the control register is 0x07654321 which means that all channels are disabled and the priority increases with the channel number
         // DMA::DPCR= 0x07654321;
         DMA::dpcr.raw = 0x07654321;
+        GPU::resetGPU();
     };
     friend class Monitor;
     void IF(pr::Pre_IF_t &Pre_IF, pr::IF_ID_t &IF_ID)
@@ -158,14 +159,17 @@ class MIPSX_SYSTEM
         ID_CP0_M::setSEPC_MUX(CTRL_CP0_UNIT.o_sepc,IF_pc,ID_pcd,EX_pce,MEM_pcm);
         cp0_epcin = ID_CP0_M::SEPC_MUX.o_epcin;
         cp0_operations(db);// CPR[0, rd, sel] ← rt
-        if(CTRL_UNIT.o_mfHI|CTRL_UNIT.o_mfLO|CTRL_UNIT.o_mtHI|CTRL_UNIT.o_mtLO\
-         |CTRL_UNIT.o_aluc==ALU_DIV|CTRL_UNIT.o_aluc==ALU_DIVU\
-         |CTRL_UNIT.o_aluc==ALU_MULT|CTRL_UNIT.o_aluc==ALU_MULTU){
-            hilo_operations_ID(da,db);
-         }
+        if(     CTRL_UNIT.o_mfHI    |   CTRL_UNIT.o_mfLO    |   CTRL_UNIT.o_mtHI    |   CTRL_UNIT.o_mtLO\
+                | (CTRL_UNIT.o_aluc==ALU_DIV) | (CTRL_UNIT.o_aluc==ALU_DIVU) \
+                | (CTRL_UNIT.o_aluc==ALU_MULT) | (CTRL_UNIT.o_aluc==ALU_MULTU) 
+            ){
+                hilo_operations_ID(da,db);
+            }
+         
          ID_EX.ewriteHILO = (CTRL_UNIT.o_mtHI|CTRL_UNIT.o_mtLO\
-            |CTRL_UNIT.o_aluc==ALU_DIV|CTRL_UNIT.o_aluc==ALU_DIVU\
-            |CTRL_UNIT.o_aluc==ALU_MULT|CTRL_UNIT.o_aluc==ALU_MULTU);
+                | (CTRL_UNIT.o_aluc==ALU_DIV)  | (CTRL_UNIT.o_aluc==ALU_DIVU) \
+                | (CTRL_UNIT.o_aluc==ALU_MULT) | (CTRL_UNIT.o_aluc==ALU_MULTU) 
+            );
 
         if(CTRL_CP0_UNIT.o_exc){
             using namespace R3000_CP0;
@@ -425,6 +429,8 @@ class MIPSX_SYSTEM
         EX(ID_EX, EX_MEM);
         ID(IF_ID, ID_EX);
         IF(Pre_IF, IF_ID);
+        DMA::dma_main();
+
         if(!Stall)
             Pre_IF.PC = next_pc;
 

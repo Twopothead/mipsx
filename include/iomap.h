@@ -101,7 +101,7 @@ uint32_t io_read(uint32_t vaddr,int width){
                 break;
 
             case 0x1f801810 ... 0x1f801814:
-                data = GPU_Registers::read(vaddr,width);
+                data = GPU::read(vaddr,width);
                 break;
             // case 0x1f802041 ... 0x1f802042:
             //     ;//ignore Expansion Region 2 - Int/Dip/Post
@@ -152,7 +152,7 @@ void io_write(uint32_t vaddr,uint32_t data,int width){
                 PSX_Timer::write(vaddr,data,width);
                 break;
             case 0x1f801810 ... 0x1f801814:
-                GPU_Registers::write(vaddr,data,width);
+                GPU::write(vaddr,data,width);
                 break;
             case 0x1f801c00 ... 0x1f801dff:
                 data = SPU::read(vaddr,width);

@@ -172,7 +172,7 @@ namespace R3000_CP0{
         printf("CPR08: r08 %08x r09 %08x r10 %08x r11 %08x\n",\
                 cp0_regs.BADV,cp0_regs.BDAM,cp0_regs.TLBH,cp0_regs.BPCM);
         printf("CPR12: r12 %08x r13 %08x r14 %08x r15 %08x\n",\
-                cp0_regs.SR.raw,cp0_regs.CAUSE.raw,cp0_regs.EPC,cp0_regs.PRID);
+                cp0_regs.SR.raw,cp0_regs.CAUSE.raw,cp0_regs.EPC,cp0_regs.PRID.raw);
         // printf("CPR16: r16 %08x r17 %08x r18 %08x r19 %08x\n",\
         //         cp0_regs.ERREG,cp0_regs.padding[0],cp0_regs.padding[1],cp0_regs.padding[2]);
         // printf("CPR20: r20 %08x r21 %08x r22 %08x r23 %08x\n",\

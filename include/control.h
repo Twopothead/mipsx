@@ -11,6 +11,7 @@
 #include "div.h"
 #include "cpu.h"
 #include "dma.h"
+#include <stdlib.h>
 namespace PipelineStall{
     using namespace pipeline_registers;
     bool Stall = false;
