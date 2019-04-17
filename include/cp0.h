@@ -50,6 +50,8 @@ typedef union {
         uint32_t padding3:1;
         uint32_t SW:2;
         uint32_t IP:6;
+// Interrupt pending field. Bit 8 and 9 are R/W, and contain the last value written to them. As long
+// as any of the bits are set they will cause an interrupt if the corresponding bit is set in IM.
         uint32_t padding2:12;
         uint32_t CE:2;
         uint32_t padding1:1;

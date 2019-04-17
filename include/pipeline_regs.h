@@ -14,6 +14,7 @@ namespace pipeline_registers
         uint32_t dpc4;
         bool dwpcir;
         uint32_t PCd;
+        bool intr;
     } IF_ID;
     struct ID_EX_t
     {

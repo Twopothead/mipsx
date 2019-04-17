@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include "cmipsx.h"
 #include "monitor.h"
+#include "debug.h"
 // http://emulation.gametechwiki.com/index.php/PS1_Tests
 // PS1 Test:https://psx.amidog.se/doku.php?id=psx:download:misc
 // https://www.ngemu.com/threads/pcsx-issues.143000/
@@ -89,18 +90,25 @@ int recode_cycle = 20;
 // GPR24: t8 00001000 t9 800eb8d8 k0 8005aa18 k1 00000f1c
 // GPR28: gp a0010ff0 sp 801ffd10 s8 801fff00 ra 80050270
 
+// [20359715]已经错了
 int main()
 {
     MIPSX_SYSTEM psx;
     Monitor monitor(psx); 
     //19259691
-     const int total_cycle =19259715;
     // const int total_cycle =19259715;
+    // const int total_cycle =19663618;
+    // const int total_cycle =19660028;
+    const int total_cycle =19660031;
     for( mipsx_cycle=-2;mipsx_cycle<=total_cycle+1;mipsx_cycle++)
     {   
         // if(mipsx_cycle>=19259710){
-        if(mipsx_cycle>=19259710){
+        // if(mipsx_cycle>=19259751){
+        // if(mipsx_cycle>=19660028){
+        if(mipsx_cycle>=19660026){
             Log::log = true;
+            //x__err("%x %x",R3000_CP0::cp0_regs.SR.raw,R3000_CP0::cp0_regs.CAUSE.raw);
+            Interrupt_Control::check_interrupt();
         }
         psx.tick();
         if(Log::log)
@@ -161,3 +169,67 @@ int main()
 // VSync: timeout (1:0)
 // VSync: timeout (1:0)
 // VSync: timeout (1:0)
+
+// interrupt
+// [19660027] 0x80050b7c 0xad6a0000
+// PSX HI=0000000000 LO=0000000000
+// GPR00: r0 00000000 at 800e0000 v0 1f8010f0 v1 800ea884
+// GPR04: a0 800ea884 a1 00000000 a2 00000000 a3 00000000
+// GPR08: t0 1f8010a0 t1 1f8010a4 t2 01000401 t3 1f8010a8
+// GPR12: t4 00000000 t5 800dde98 t6 04000002 t7 1f801814
+// GPR16: s0 10000000 s1 800dde98 s2 01000000 s3 04000000
+// GPR20: s4 00000000 s5 00000000 s6 00000000 s7 00000000
+// GPR24: t8 0f6f4321 t9 0f6f4b21 k0 8005aa18 k1 00000f1c
+// GPR28: gp a0010ff0 sp 801ffcd8 s8 801fff00 ra 80050f20
+// [19660028] 0x80050f20 0x3c088008
+// PSX HI=0000000000 LO=0000000000
+// GPR00: r0 00000000 at 800e0000 v0 1f8010f0 v1 800ea884
+// GPR04: a0 800ea884 a1 00000000 a2 00000000 a3 00000000
+// GPR08: t0 1f8010a0 t1 1f8010a4 t2 01000401 t3 1f8010a8
+// GPR12: t4 00000000 t5 800dde98 t6 04000002 t7 1f801814
+// GPR16: s0 10000000 s1 800dde98 s2 01000000 s3 04000000
+// GPR20: s4 00000000 s5 00000000 s6 00000000 s7 00000000
+// GPR24: t8 0f6f4321 t9 0f6f4b21 k0 8005aa18 k1 00000f1c
+// GPR28: gp a0010ff0 sp 801ffcd8 s8 801fff00 ra 80050f20
+// [19660029] 0x80000080 0x3c1a0000
+// PSX HI=0000000000 LO=0000000000
+// GPR00: r0 00000000 at 800e0000 v0 1f8010f0 v1 800ea884
+// GPR04: a0 800ea884 a1 00000000 a2 00000000 a3 00000000
+// GPR08: t0 1f8010a0 t1 1f8010a4 t2 01000401 t3 1f8010a8
+// GPR12: t4 00000000 t5 800dde98 t6 04000002 t7 1f801814
+// GPR16: s0 10000000 s1 800dde98 s2 01000000 s3 04000000
+// GPR20: s4 00000000 s5 00000000 s6 00000000 s7 00000000
+// GPR24: t8 0f6f4321 t9 0f6f4b21 k0 8005aa18 k1 00000f1c
+// GPR28: gp a0010ff0 sp 801ffcd8 s8 801fff00 ra 80050f20
+// [19660030] 0x80000084 0x275a0c80
+
+// [19661066] 0x00001014 0x42000010
+// PSX HI=0000000000 LO=0000000000
+// GPR00: r0 00000000 at 800e0000 v0 1f8010f0 v1 800ea884
+// GPR04: a0 800ea884 a1 00000000 a2 00000000 a3 00000000
+// GPR08: t0 1f8010a0 t1 1f8010a4 t2 01000401 t3 1f8010a8
+// GPR12: t4 00000000 t5 800dde98 t6 04000002 t7 1f801814
+// GPR16: s0 10000000 s1 800dde98 s2 01000000 s3 04000000
+// GPR20: s4 00000000 s5 00000000 s6 00000000 s7 00000000
+// GPR24: t8 0f6f4321 t9 0f6f4b21 k0 80050f20 k1 00000f1c
+// GPR28: gp a0010ff0 sp 801ffcd8 s8 801fff00 ra 80050f20
+// [19661067] 0x80050f20 0x3c088008
+// PSX HI=0000000000 LO=0000000000
+// GPR00: r0 00000000 at 800e0000 v0 1f8010f0 v1 800ea884
+// GPR04: a0 800ea884 a1 00000000 a2 00000000 a3 00000000
+// GPR08: t0 1f8010a0 t1 1f8010a4 t2 01000401 t3 1f8010a8
+// GPR12: t4 00000000 t5 800dde98 t6 04000002 t7 1f801814
+// GPR16: s0 10000000 s1 800dde98 s2 01000000 s3 04000000
+// GPR20: s4 00000000 s5 00000000 s6 00000000 s7 00000000
+// GPR24: t8 0f6f4321 t9 0f6f4b21 k0 80050f20 k1 00000f1c
+// GPR28: gp a0010ff0 sp 801ffcd8 s8 801fff00 ra 80050f20
+// [19661068] 0x80050f24 0x8d08929c
+// PSX HI=0000000000 LO=0000000000
+// GPR00: r0 00000000 at 800e0000 v0 1f8010f0 v1 800ea884
+// GPR04: a0 800ea884 a1 00000000 a2 00000000 a3 00000000
+// GPR08: t0 80080000 t1 1f8010a4 t2 01000401 t3 1f8010a8
+// GPR12: t4 00000000 t5 800dde98 t6 04000002 t7 1f801814
+// GPR16: s0 10000000 s1 800dde98 s2 01000000 s3 04000000
+// GPR20: s4 00000000 s5 00000000 s6 00000000 s7 00000000
+// GPR24: t8 0f6f4321 t9 0f6f4b21 k0 80050f20 k1 00000f1c
+// GPR28: gp a0010ff0 sp 801ffcd8 s8 801fff00 ra 80050f20

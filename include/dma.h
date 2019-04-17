@@ -1,9 +1,11 @@
 #pragma once
 #include <inttypes.h>
 #include "debug.h"
+#include "dma.h"
+#include "interrupt.h"
 int mipsx_cycle =0;
 namespace DMA_TOOLS{
-    typedef enum {
+    typedef enum {// start from zero 
         DMA_MDEC_IN  = 0,    // Channel 0: Media Decoder input
         DMA_MDEC_OUT = 1,    // Channel 1: Media Decoder output
         DMA_GPU      = 2,    // Channel 2: GPU
@@ -68,20 +70,25 @@ namespace DMA_TOOLS{
     }D_BCR_t;
     
     typedef union{// 1F801088h+N*10h - D#_CHCR - DMA Channel Control (Channel 0..6) (R/W)
+        // enum class Direction : uint32_t {toMainRam=0,fromMainRam=1};
+        // enum class Step : uint32_t {forward=0,backward=1};
+        // enum class SyncMode : uint32_t { startImmediately = 0, syncBlocToDMARequests = 1, linkedListMode = 2 };
+        // enum class Enabled : uint32_t{ completed = 0, stop = 0, start = 1};
+        // enum class Trigger : uint32_t { clear = 0, automatic = 0, manual =1};
         struct{//intel x86 little endian
-            uint32_t direction:1; // 0   transfer direction: RAM-to-device(0) or device-to-RAM(1)
-            uint32_t step:1;      // 1   Address increment(0) or decrement(1) mode
-            uint32_t chopmode:1;  // 2   Chopping mode
+            uint32_t direction:1;  // 0   transfer direction: RAM-to-device(0) or device-to-RAM(1)
+            uint32_t step:1;            // 1   Address increment(0) or decrement(1) mode
+            uint32_t chopmode:1;    // 2   Chopping mode
             uint32_t padding1:6;
-            uint32_t sync:2;      // [10 : 9] Synchronization type: Manual(0), Request(1) or Linked List(2)
+            uint32_t sync:2;        // [10 : 9] Synchronization type: Manual(0), Request(1) or Linked List(2)
             uint32_t padding2:5;
-            uint32_t chopDMAwin:3;// [18 : 16] Chopping DMA window
+            uint32_t chopDMAwin:3;  // [18 : 16] Chopping DMA window
             uint32_t padding3:1;
-            uint32_t chopCPUwin:3;// [22 : 20] Chopping CPU window
+            uint32_t chopCPUwin:3;  // [22 : 20] Chopping CPU window
             uint32_t padding4:1;
-            uint32_t enable:1;    // 24 Enable
+            uint32_t enable:1;       // 24 Enable
             uint32_t padding5:3;
-            uint32_t trigger:1;   // 28 Manual trigger
+            uint32_t trigger:1;     // 28 Manual trigger
             uint32_t padding6:3;
         };
         uint32_t raw;
@@ -108,6 +115,23 @@ namespace DMA{
     }
     uint32_t get_DMA_regindex(uint32_t vaddr){
         return (vaddr>>2) & 0b11;
+    }
+    void update_irq_active_flag(){
+        using namespace Interrupt_Control;
+        bool forced = dicr.force_irq;
+        bool master = dicr.master_irq_en;
+        bool csignal = ((dicr.channel_irq_en) & (dicr.channel_irq_flags) & 0x7f) != 0 ;
+        bool active = forced || (master && csignal);
+        if(active){
+            if(!(dicr.master_irq_flag)){
+                bus_irq((uint32_t)IRQ3_DMA);
+            }
+            dicr.master_irq_flag = 1;
+        }else
+        {
+            dicr.master_irq_flag = 0;
+        }
+        
     }
     uint32_t read(uint32_t vaddr,int width){
         uint32_t data = 0;
@@ -172,7 +196,11 @@ namespace DMA{
                     dpcr.raw = data;
                     break;
                 case 1:
-                    dicr.raw = data;
+                    // dicr.raw = data;
+                    dicr.raw &= 0xff000000;
+                    dicr.raw |= (data & 0x00ff803f);
+                    dicr.raw &= ~(data & 0x7f000000);
+                    update_irq_active_flag();
                     break;
                 case 2:
                     break;
@@ -202,27 +230,21 @@ namespace DMA{
         return;
     }
 
-    void dma_main(){
-        if(dpcr.enableOTC){
-            if(channels[6].control.raw=0x11000002){
-                // do
-                channels[6].control.raw &= ~0x01000000;
-            }
-        }
-        if(dpcr.enablePIO){
+    // void channel2_vramread(){
 
-        }
-        if(dpcr.enableSPU){
+    // }
+    // void channel2_vramwrite(){
 
+    // }
+    
+    void irq_channel(int n){
+        int flag = 1 << (n+24); // dicr.channel_irq_flags;
+        int mask = 1 << (n+16); // dicr.channel_irq_en;
+        if(dicr.raw & mask){
+            dicr.raw |= flag;     
         }
-        if(dpcr.enableGPU){
-
-        }
-        if(dpcr.enableMDECout){
-
-        }
-        if(dpcr.enableMDECin){
-            
-        }
+        update_irq_active_flag();
+        // Interrupt_Control::check_interrupt();
     }
+    
 }

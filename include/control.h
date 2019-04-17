@@ -77,6 +77,7 @@ namespace CONTROL{
         uint32_t rt;
         uint32_t rd;
         bool i_ecancel;
+        bool i_irq;
         bool o_cancel;
         bool o_isbr;
         bool o_ove;
@@ -459,8 +460,8 @@ namespace CONTROL{
                 CTRL_UNIT.o_sl_width_sel = 0b10;// select byte width 8
                 break;
             case 0b100010:/* lwl */
-                x__err("fuck lwl %d",mipsx_cycle);
-                exit(0);
+                // x__err("fuck lwl %d",mipsx_cycle);
+                // exit(0);
                 // while(1){
                 //     ;/* code */
                 // }
@@ -656,6 +657,15 @@ namespace CONTROL{
         using namespace ForwardingUnit;
         CTRL_UNIT.o_fwda = calcuforwardA(CTRL_UNIT.rs);
         CTRL_UNIT.o_fwdb = calcuforwardB(CTRL_UNIT.rt);
+
+        if(CTRL_CP0_UNIT.i_irq){
+            CTRL_UNIT.o_wmem = false;
+            CTRL_UNIT.o_wreg = false;
+            CTRL_UNIT.o_selpc = 0b10;// base
+            CTRL_CP0_UNIT.o_sepc = 0b10;//pce
+            CTRL_CP0_UNIT.o_exc = true;
+            x__err("fjiba %x",CTRL_UNIT.o_selpc);
+        }
     }
 
 }

@@ -6,6 +6,7 @@
 #include "iotools.h"
 #include "spu.h"
 #include "gpu.h"
+#include "interrupt.h"
 namespace Memory_Control_1{
         const uint32_t BASE_Memory_Control_1 = 0x1f801000;
         typedef union Memory_Control_1{
@@ -48,25 +49,7 @@ namespace Memory_Control_2{
 
 
 
-namespace Interrupt_Control{
-        const uint32_t BASE_Interrupt_Control = 0x1f801070;
-        typedef union Interrupt_Control{
-            struct {
-                uint32_t I_STAT;
-                uint32_t I_MASK;
-            };
-            uint32_t raw[2];   
-        }Interrupt_Control_t;
-        Interrupt_Control_t interrupt_ctrl;
-        uint32_t read(uint32_t vaddr,int width){
-            int base_addr = BASE_Interrupt_Control;
-            return RW::io_custom_read(vaddr,base_addr,interrupt_ctrl.raw,width);
-        };
-        void write(uint32_t vaddr,uint32_t data,int width){
-            int base_addr = BASE_Interrupt_Control;
-            RW::io_custom_write(vaddr,base_addr,interrupt_ctrl.raw,data,width);
-        }
-}
+
 
 // namespace MDEC_Registers{
 //         typedef union MDEC_Registers{

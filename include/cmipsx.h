@@ -77,6 +77,10 @@ class MIPSX_SYSTEM
         // if(Log::log)
         //     x__err("%x %d %x %x %x ",pc,ID_selpc,IF_npc,R3000_CP0::cp0_regs.EPC,exception_handler_address);
     
+        if(mipsx_cycle>=19660026){
+           x__log("ID_selpc%x %x",ID_selpc,next_pc);
+        }
+
         if(show_stage_log)
             printf("IF %08x\t", IF_ID.PCd);
         return;
@@ -98,6 +102,13 @@ class MIPSX_SYSTEM
         rd = get_rd(IF_ID.IR);
         imm = get_immediate(IF_ID.IR);
         dpc4 = IF_ID.dpc4;
+        if(IF_ID.intr){
+            CTRL_CP0_UNIT.i_irq = true;
+            IF_ID.intr = false;
+        }else{
+            CTRL_CP0_UNIT.i_irq = false;
+        }
+        
   
         CTRL_UNIT.op = op;
         CTRL_UNIT.funct = funct;
@@ -175,8 +186,9 @@ class MIPSX_SYSTEM
             using namespace R3000_CP0;
             cp0_regs.SR.raw = (cp0_regs.SR.raw & ~0x3f) | ( (cp0_regs.SR.raw<<2) & 0x3f );
             uint32_t code = Bitwise::extract(2,6,CTRL_CP0_UNIT.o_cause);// [ 6 : 2 ] EXECODE
-            cp0_regs.CAUSE.raw = (cp0_regs.CAUSE.raw & 0x7f) | ( ( (code)<<2 ) & 0x7f ) ;
+            cp0_regs.CAUSE.raw = (cp0_regs.CAUSE.raw & ~0x7f) | ( ( (code)<<2 ) & 0x7f ) ;
             R3000_CP0::cp0_regs.EPC = cp0_epcin;
+            // x__err("cp0_regs.CAUSE.raw%x",cp0_regs.CAUSE.raw);
         }
 
             
@@ -413,6 +425,113 @@ class MIPSX_SYSTEM
             std::cout<<(char)cpu.gp.R04_A0;
         }
     }
+    void channel2_vramWrite(){
+        using namespace DMA;
+        uint32_t addr = channels[DMA_GPU].address.addr & 0x1fffff;
+        uint32_t *ptr = (uint32_t*)(memory.real_main_Ram + addr);
+        uint32_t bs =  channels[DMA_GPU].counter.syncMode1.blockSize;
+        uint32_t ba =  channels[DMA_GPU].counter.syncMode1.blockCount;
+        // BC/BS/BA can be in range 0001h..FFFFh (or 0=10000h)
+        bs = (bs!=0)?bs:0x10000;
+        ba = (ba!=0)?ba:0x10000;
+        uint32_t size =  bs * ba; 
+        GPU::WriteList(ptr,size);// Read MainRam to get GP commands, then GPU write Vram (framebuffer)
+        channels[DMA_GPU].address.addr += size;
+        // channels[DMA_GPU].control.enable = 0;
+    }
+    void channel2_linkedlist(){
+        using namespace DMA;
+        uint32_t addr = channels[DMA_GPU].address.addr & 0x1fffff;
+        uint32_t *ptr = (uint32_t*)(memory.real_main_Ram + addr);
+        uint32_t nextaddr;
+        uint32_t size;
+        // Interrupt_Control::check_interrupt();
+        do{
+            size = ptr[0] >> 24;
+            nextaddr = ptr[0] & 0xffffff;
+            channels[DMA_GPU].address.addr = nextaddr;
+            GPU::WriteList( ptr + 1, size );// memRead (skip header)
+            ptr = (uint32_t *)(memory.real_main_Ram + (nextaddr & 0x1fffff));
+        }while (nextaddr != 0xffffff);
+        using namespace Interrupt_Control;
+        irq_channel(DMA_GPU);// 2
+       // channels[DMA_GPU].control.enable = 0;
+    }
+    void do_Channel2_GPU(){
+        using namespace DMA;
+            switch (channels[DMA_GPU].control.raw)
+            {
+                case 0x01000200:// (VramRead)
+                     ;// TODO
+                    break;
+                case 0x01000201:// (VramWrite)
+                    channel2_vramWrite();
+                    break;
+                case 0x01000401:// (List)
+                    channel2_linkedlist();
+                
+                    break;    
+                default:
+                    break;
+            }
+        channels[DMA_GPU].control.enable = 0;
+    }
+    
+    void do_channel6_OTC(){
+        using namespace DMA;
+            if(channels[DMA_OTC].control.raw == 0x11000002){//   DMA6 OTC      11000002h (always)
+                uint32_t addr = channels[DMA_OTC].address.addr & 0x1fffff;
+                uint32_t blockCount = channels[DMA_OTC].counter.syncMode1.blockCount;
+                uint32_t blockSize = channels[DMA_OTC].counter.syncMode1.blockSize;
+                blockCount = (blockCount!=0) ? blockCount : 0x10000;
+                uint32_t word = 0;
+                uint32_t remainingSize = blockSize;
+                uint32_t currentAddr = addr;
+                if(channels[DMA_OTC].control.direction == 0){// Channel 6 Only suport "to mainram"
+                    while( remainingSize > 0){
+                        currentAddr = addr & 0x1ffffc;
+                        word = (remainingSize == 1) ? 0xffffff : (addr - 4) & 0x1fffff;/* last entry contains the end of table marker; if not ,point to the previous entru */
+                        memory.write<uint32_t>(currentAddr,word);
+                        addr -= 4;// decrement(1)
+                        --remainingSize;
+                    }
+                }
+                channels[DMA_OTC].control.enable = 0;//0;//D_CHCR_t::Enabled::completed;//channels[DMA_OTC].control.raw &= ~0x01000000;
+            }
+    }
+    void dma_main(){
+        using namespace DMA;
+        // Commonly used DMA Control Register values for starting DMA transfers
+        if(dpcr.enableOTC){
+            do_channel6_OTC();
+        }
+        if(dpcr.enablePIO){//   DMA5 PIO      N/A       (not used by any known games)
+            ;
+        }
+        if(dpcr.enableSPU){
+            if(channels[DMA_SPU].control.raw == 0x01000201)//   DMA4 SPU      01000201h (write), 01000200h (read, rarely used)
+                ;
+        }
+        if(dpcr.enableCDROM){
+            if(channels[DMA_CDROM].control.raw == 0x11000000)//   DMA3 CDROM    11000000h (normal), 11400100h (chopped, rarely used)
+                ;
+        }
+        if(dpcr.enableGPU){
+            //   DMA2 GPU      01000200h (VramRead), 01000201h (VramWrite), 01000401h (List)
+            do_Channel2_GPU();
+
+        }
+        if(dpcr.enableMDECout){
+            //   DMA1 MDEC.OUT 01000200h (always)
+            if(channels[DMA_MDEC_OUT].control.raw == 0x01000200)
+                ;
+        }
+        if(dpcr.enableMDECin){
+            //   DMA0 MDEC.IN  01000201h (always)
+            if(channels[DMA_MDEC_IN].control.raw == 01000201)
+                ;
+        }
+    }
     void tick()
     {
         using namespace pipeline_registers;
@@ -429,7 +548,8 @@ class MIPSX_SYSTEM
         EX(ID_EX, EX_MEM);
         ID(IF_ID, ID_EX);
         IF(Pre_IF, IF_ID);
-        DMA::dma_main();
+        dma_main();
+        // Interrupt_Control::check_interrupt();
 
         if(!Stall)
             Pre_IF.PC = next_pc;
