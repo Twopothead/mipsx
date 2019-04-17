@@ -12,6 +12,7 @@
 #include "cpu.h"
 #include "dma.h"
 #include <stdlib.h>
+#include "cp0.h"
 namespace PipelineStall{
     using namespace pipeline_registers;
     bool Stall = false;
@@ -662,9 +663,15 @@ namespace CONTROL{
             CTRL_UNIT.o_wmem = false;
             CTRL_UNIT.o_wreg = false;
             CTRL_UNIT.o_selpc = 0b10;// base
-            CTRL_CP0_UNIT.o_sepc = 0b10;//pce
+            CTRL_CP0_UNIT.o_sepc = 0b11;//pcm
             CTRL_CP0_UNIT.o_exc = true;
-            x__err("fjiba %x",CTRL_UNIT.o_selpc);
+            CTRL_CP0_UNIT.o_cancel = true;/*目的不是改变PC,而是让他不写*/
+            ID_EX.ewmem = false;// cancel 0x80050f28 0x3c018008
+            ID_EX.ewreg = false;
+            EX_MEM.mwmem = false;// cancel 0x80050f24 0x8d08929c
+            EX_MEM.mwreg = false;// cancel 0x80050f24 0x8d08929c
+            MEM_WB.wwreg = false;// cancel 0x80050f20 0x3c088008
+            x__err("fjiba %x %x %x",CTRL_UNIT.o_selpc,ID_EX.IR,R3000_CP0::cp0_regs.EPC);
         }
     }
 

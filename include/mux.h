@@ -153,7 +153,7 @@ namespace Multiplexer{
             }SEPC_MUX;
             void setSEPC_MUX(const uint32_t sel_sepc,
                     uint32_t pc,uint32_t pcd,uint32_t pce,uint32_t pcm){
-                    SEPC_MUX.pc = pc,SEPC_MUX.pcd = pcd,SEPC_MUX.pce,SEPC_MUX.pcm;
+                    SEPC_MUX.pc = pc,SEPC_MUX.pcd = pcd,SEPC_MUX.pce=pce,SEPC_MUX.pcm=pcm;
                 switch (sel_sepc)
                 {
                     case 0b00:

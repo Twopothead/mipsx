@@ -99,7 +99,8 @@ int main()
     // const int total_cycle =19259715;
     // const int total_cycle =19663618;
     // const int total_cycle =19660028;
-    const int total_cycle =19660031;
+    // const int total_cycle =19660035;
+    const int total_cycle =19661070;
     for( mipsx_cycle=-2;mipsx_cycle<=total_cycle+1;mipsx_cycle++)
     {   
         // if(mipsx_cycle>=19259710){
@@ -114,6 +115,7 @@ int main()
         if(Log::log)
             monitor.showStatus();
     }
+    printf("%x",R3000_CP0::cp0_regs.EPC);
     //x__err("[19258618] 0x8cce0000	lw  R14, [R06 + 0x0]\n这里出错了,此时R14是0x1f801814,这里是从GPU加载状态,然而,现在GPU没有实现");
     
    

@@ -65,7 +65,7 @@ namespace Interrupt_Control{
             switch (vaddr)
             {
                 case 0x1f801070:
-                    set_istat( data );
+                    set_istat( data & interrupt_ctrl.I_STAT);
                     break;
                 case 0x1f801074:
                     set_imask( data & 0x7ff);
