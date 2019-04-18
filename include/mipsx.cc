@@ -6,9 +6,7 @@
 #include "cmipsx.h"
 #include "monitor.h"
 #include "debug.h"
-// http://emulation.gametechwiki.com/index.php/PS1_Tests
-// PS1 Test:https://psx.amidog.se/doku.php?id=psx:download:misc
-// https://www.ngemu.com/threads/pcsx-issues.143000/
+
 int recode_cycle = 20;
 // syscall 
 // [2695642] 0xbfc0d964 0x0000000c
@@ -95,32 +93,42 @@ int main()
 {
     MIPSX_SYSTEM psx;
     Monitor monitor(psx); 
-    //19259691
-    // const int total_cycle =19259715;
-    // const int total_cycle =19663618;
-    // const int total_cycle =19660028;
-    // const int total_cycle =19660035;
-    const int total_cycle =19661070;
+    // const int total_cycle =19662070;
+    const int total_cycle =19663630;
     for( mipsx_cycle=-2;mipsx_cycle<=total_cycle+1;mipsx_cycle++)
     {   
-        // if(mipsx_cycle>=19259710){
-        // if(mipsx_cycle>=19259751){
-        // if(mipsx_cycle>=19660028){
-        if(mipsx_cycle>=19660026){
-            Log::log = true;
-            //x__err("%x %x",R3000_CP0::cp0_regs.SR.raw,R3000_CP0::cp0_regs.CAUSE.raw);
-            Interrupt_Control::check_interrupt();
+        // if(mipsx_cycle>=19660026){
+          if(mipsx_cycle>=19663620){
+            // Log::log = true;
         }
         psx.tick();
+        psx.hack_intercept_BIOS_Putchar();
         if(Log::log)
             monitor.showStatus();
     }
-    printf("%x",R3000_CP0::cp0_regs.EPC);
+    // printf("%x",R3000_CP0::cp0_regs.EPC);
     //x__err("[19258618] 0x8cce0000	lw  R14, [R06 + 0x0]\n这里出错了,此时R14是0x1f801814,这里是从GPU加载状态,然而,现在GPU没有实现");
     
    
     return 0;
 }
+//0x5c86260a
+// Our next stop will be an unhandled LW at address 0x1f801814. This register
+// is GPUSTAT when read and GP1 when written.
+// [19663622] 0x8005116c 0x8c4b0000
+// 0x8c4b0000	lw  R11, [R02 + 0x0]
+// 0x8005116c 0x8c4b0000
+// PSX HI=0000000000 LO=0000000000
+// GPR00: r0 00000000 at 00000000 v0 1f801814 v1 05000000
+// GPR04: a0 00000000 a1 800eccf8 a2 00000000 a3 00000260
+// GPR08: t0 0eccf000 t1 000eccf0 t2 050eccf0 t3 80000008
+// GPR12: t4 00000800 t5 00000008 t6 000000f0 t7 00000000
+// GPR16: s0 01000000 s1 60000000 s2 10000000 s3 00000000
+// GPR20: s4 00000000 s5 00000000 s6 00000000 s7 00000000
+// GPR24: t8 000eccf0 t9 050eccf0 k0 80050f20 k1 00000f1c
+// GPR28: gp a0010ff0 sp 801ffd10 s8 801fff00 ra 80051144
+
+
 //真正出错的地方在19258628,以下为正解
 // 	0x8cce0000	lw  R14, [R06 + 0x0]
 // 1f801814关键是GPU GP0的相关指令没有implement

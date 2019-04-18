@@ -21,7 +21,7 @@ namespace Unsigned_Multiply{
     uint64_t get_product(){
         return Product;
     }
-    #define get_bit(nr,value) ( ( (value>>nr) & 0x1) ? true:false )
+    #define Getbit(nr,value) ( ( (value>>nr) & 0x1) ? true:false )
     bool calcu_product_carry(){
         return ((uint64_t)(Product>>32)+(uint64_t)Multiplicand) >> 32;
     }
@@ -29,14 +29,14 @@ namespace Unsigned_Multiply{
         printf("0b");
         int width = 64;
         for(int i=width-1;i>=0;i--){
-                printf("%d",get_bit(i,value));
+                printf("%d",Getbit(i,value));
         }
     }
     void MultiplyU(uint32_t multiplicand,uint32_t multiplier){
     // unsigned multiply
         setMultiplyU(multiplicand,multiplier);
         for(int i=0;i<32;i++){
-            if(get_bit(0,Product)){
+            if(Getbit(0,Product)){
                 product_lo32 = Product;
                 product_hi32 = ((Product>>32)+Multiplicand);
                 product_carry = calcu_product_carry();

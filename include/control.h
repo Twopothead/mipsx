@@ -671,7 +671,7 @@ namespace CONTROL{
             EX_MEM.mwmem = false;// cancel 0x80050f24 0x8d08929c
             EX_MEM.mwreg = false;// cancel 0x80050f24 0x8d08929c
             MEM_WB.wwreg = false;// cancel 0x80050f20 0x3c088008
-            x__err("fjiba %x %x %x",CTRL_UNIT.o_selpc,ID_EX.IR,R3000_CP0::cp0_regs.EPC);
+            // x__err("fjiba %x %x %x",CTRL_UNIT.o_selpc,ID_EX.IR,R3000_CP0::cp0_regs.EPC);
         }
     }
 

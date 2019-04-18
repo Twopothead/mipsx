@@ -8,7 +8,7 @@ namespace DivideUnit{
     typedef unsigned __int128 uint128_t;
     uint128_t Remainder;// 65 bit
     uint32_t Divisor;
-    #define get_bit(nr,value) ( ( (value>>nr) & 0x1) ? true:false )
+    #define Get_bit(nr,value) ( ( (value>>nr) & 0x1) ? true:false )
     uint128_t set_high32(uint128_t r,uint32_t high32){
         uint32_t origin_lo = r & 0xffffffff;
         r = high32;
@@ -37,7 +37,7 @@ namespace DivideUnit{
         for(int i=0;i<32;i++){
             Remainder <<= 1;
             difference = (Remainder>>32) - Divisor;
-            if(get_bit(32,difference)==0){
+            if(Get_bit(32,difference)==0){
                 Remainder = set_high32(Remainder,difference);
                 Remainder |= 0b1;
             }else{
@@ -52,8 +52,8 @@ namespace DivideUnit{
     }
     void Div(uint32_t dividend,uint32_t divisor){
     // signed division
-        bool s_dividend = get_bit(31,dividend);
-        bool s_divisor = get_bit(31,divisor);
+        bool s_dividend = Get_bit(31,dividend);
+        bool s_divisor = Get_bit(31,divisor);
         bool s_remainder = (s_dividend) ^ (s_divisor); 
         Remainder = (s_dividend)?(-dividend):dividend;
         Divisor = (s_divisor)?(-divisor):divisor;
@@ -61,7 +61,7 @@ namespace DivideUnit{
         for(int i=0;i<32;i++){
             Remainder <<= 1;
             difference = (Remainder>>32) - Divisor;
-            if(get_bit(32,difference)==0){// carry out of the adder
+            if(Get_bit(32,difference)==0){// carry out of the adder
                 Remainder = set_high32(Remainder,difference);
                 Remainder |= 0b1;
             }else{

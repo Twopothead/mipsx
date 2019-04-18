@@ -76,10 +76,6 @@ class MIPSX_SYSTEM
         IF_ID.PCd = pc;
         // if(Log::log)
         //     x__err("%x %d %x %x %x ",pc,ID_selpc,IF_npc,R3000_CP0::cp0_regs.EPC,exception_handler_address);
-    
-        if(mipsx_cycle>=19660026){
-           x__log("ID_selpc%x %x",ID_selpc,next_pc);
-        }
 
         if(show_stage_log)
             printf("IF %08x\t", IF_ID.PCd);
@@ -188,7 +184,7 @@ class MIPSX_SYSTEM
             uint32_t code = Bitwise::extract(2,6,CTRL_CP0_UNIT.o_cause);// [ 6 : 2 ] EXECODE
             cp0_regs.CAUSE.raw = (cp0_regs.CAUSE.raw & ~0x7f) | ( ( (code)<<2 ) & 0x7f ) ;
             R3000_CP0::cp0_regs.EPC = cp0_epcin;
-            x__err("ecp %x %x %x %x %x %x",cp0_epcin,IF_pc,ID_pcd,EX_pce,MEM_pcm,CTRL_CP0_UNIT.o_sepc);
+            // x__err("ecp %x %x %x %x %x %x",cp0_epcin,IF_pc,ID_pcd,EX_pce,MEM_pcm,CTRL_CP0_UNIT.o_sepc);
             // x__err("cp0_regs.CAUSE.raw%x",cp0_regs.CAUSE.raw);
         }
 
@@ -355,7 +351,6 @@ class MIPSX_SYSTEM
                     break;
                 case 0b01:// LH 16
                     mmo = (EX_MEM.mlhu) ? DECODE::zero_extend(mmo) : DECODE::sign_extend(mmo);/* sign-extend the fetched value or not */
-                    // x__err("%x",mmo);
                     break;
                 case 0b10:// LB 8
                     mmo = (EX_MEM.mlbu) ? ((uint32_t)(0x0 | mmo)) : LB::sign_extend8to32(mmo);/* sign-extend the fetched value or not */
@@ -551,7 +546,8 @@ class MIPSX_SYSTEM
         ID(IF_ID, ID_EX);
         IF(Pre_IF, IF_ID);
         dma_main();
-        // Interrupt_Control::check_interrupt();
+        Interrupt_Control::check_interrupt();
+        
 
         if(!Stall)
             Pre_IF.PC = next_pc;

@@ -24,18 +24,9 @@ namespace Interrupt_Control{
             uint32_t iec = cp0_regs.SR.IEc;
             uint32_t irq = (cp0_regs.SR.raw & cp0_regs.CAUSE.raw & 0xff00) != 0;
             if(irq&&iec){
-                x__log("fuck your mother %x",cp0_regs.SR.BEV);
                 using namespace pipeline_registers;
                 IF_ID.intr = true;
-                // x__err("%x %x %x %x",IF_pc,ID_pcd,EX_pce,MEM_pcm);
-                //选PCE
-                // EX_pce
-
-            }
-            // printf("%x %x",cp0_regs.SR.raw& 0xff00 , cp0_regs.CAUSE.raw);
-            
-            
-                
+            }               
         }
         void update_irq(uint32_t stat,uint32_t mask){
             interrupt_ctrl.I_STAT = stat;
