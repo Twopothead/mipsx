@@ -6,7 +6,7 @@
 #include "bitwise.h"
 #include "gp0.h"
 #include "gp1.h"
-
+#include "debug.h"
 namespace GPU{
         using namespace Bitwise;
         const uint32_t BASE_GPU_Registers = 0x1f801810;
@@ -22,13 +22,28 @@ namespace GPU{
             GP1.ready_for_cmd = 1;
             GP1.ready_for_vram = 1;
             GP1.ready_for_dma = 1;
-            return (GP1.raw & ~0x00080000) | 0x1c002000; 
+
+/* temporary hack: if we don't emulate bit 31 correctly , setting bit 19 Vertical Resolution 
+ *(GP1.height)  to 1 will lock the BIOS,therefore, here I set GP1.height = 0. or let GP1.raw = (GP1.raw & ~0x00080000)
+ */
+            GP1.height = 0;// return (GP1.raw & ~0x00080000) | 0x1c002000; 
+            return GP1.raw;
+        }
+        uint16_t vram_transfer(){
+            if(!gpu2cpu_transfer.run.active){
+                return 0;
+            }
+
+
+
         }
         uint32_t gpu_data(){
-            uint32_t lower;
-            uint32_t upper;
+            // uint32_t lower;
+            // uint32_t upper;
 
-            return 0;
+            // return 0;
+            
+            return GP0;
         }
         // typedef union GPU_Registers{
         //     struct{
@@ -44,16 +59,22 @@ namespace GPU{
         // GPU_Registers_t gpu_regs;
         
         uint32_t read(uint32_t vaddr,int width){
+            uint32_t data = 0;
             switch (vaddr)
             {
                 case 0x1f801810:
-                    return gpu_data();
+                    data = gpu_data();
+                    x__err("read GP0 %x",data);
+                    return data;
                 case 0x1f801814:
-                    return gpu_stat();
+                    data = gpu_stat();
+                    x__err("read GP1 %x",data);
+                    return data;
                 default:
                     return 0;
             }
         };
+        #define REQUIRE(n)  if( cmd.size() < n) return;
 
         void WriteGP0(uint32_t data){
             cmd.push_back(data);
@@ -72,13 +93,18 @@ namespace GPU{
                     cmd.clear();
                     break;
 // GP0(20h..3Fh)            - Render Polygons
-                case 0x20:// GP0(20h) - Monochrome three-point polygon, opaque
-                case 0x22:// GP0(22h) - Monochrome three-point polygon, semi-transparent
-                    // POLY_F3
-                    cmd.clear();
-                    break;
+                // case 0x20:// GP0(20h) - Monochrome three-point polygon, opaque
+                // case 0x22:// GP0(22h) - Monochrome three-point polygon, semi-transparent
+                //     // POLY_F3
+                //     cmd.clear();
+                //     break;
 
                 case 0x28:// GP0(28h) - Monochrome four-point polygon, opaque
+                    REQUIRE(5);
+                    GP0_CMDS::GP0_28h_quad_mono_opaque(data);
+                    cmd.clear();
+                    break;
+                    
                 case 0x2a:// GP0(2Ah) - Monochrome four-point polygon, semi-transparent
                     // POLY_F4
                     cmd.clear();
@@ -192,7 +218,9 @@ namespace GPU{
         }
         void WriteList(uint32_t *ptr,uint32_t size){
             while(size--){
+                x__err("(list)send to GP0 %x",*ptr);
                 WriteGP0( *ptr++ );
+
             }
         }
         void resetGPU(){
@@ -216,9 +244,11 @@ namespace GPU{
             {
                 case 0x1f801810:
                     WriteGP0(data);// We’ll have to decode those command like we decoded the CPU instructions.
+                    x__err("GP0 cmd:%x",data);
                     break;
                 case 0x1f801814:
                     WriteGP1(data);// We’ll have to decode those command like we decoded the CPU instructions.
+                    x__err("GP1 cmd:%x",data);
                     break;
                 default:
                     return;

@@ -3,6 +3,7 @@
 #include "gp0.h"
 #include "gpu.h"
 #include "inttypes.h"
+#include "draw.h"
 namespace GP1_CMDS{
     using namespace Bitwise;
     using namespace GPU;
@@ -41,6 +42,9 @@ namespace GP1_CMDS{
         display_area_x = extract(0,9,data);     //   0-9   X (0-1023)    (halfword address in VRAM)  (relative to begin of VRAM)
         display_area_y = extract(10,18,data);   //   10-18 Y (0-511)     (scanline number in VRAM)   (relative to begin of VRAM)
         //   19-23 Not used (zero)
+        display_area_x &= 0x3fe;// aligned to a 16bit pixel.
+        //Note that the LSB of the horizontal coordinate is ignored. It means that
+        //we’re always aligned to a 16bit pixel.
     }
 
     void GP1_06h_set_horizontal_display_range(uint32_t data){
@@ -67,30 +71,7 @@ namespace GP1_CMDS{
         GP1._Reverseflag = get_bit(7,data); //   7     "Reverseflag"               (0=Normal, 1=Distorted)      ;GPUSTAT.14
         //   8-23  Not used (zero)
     }
-    #define REQUIRE(n)  if( cmd.size() < n) return;
 
-    void GP1_2(uint32_t data){
-        REQUIRE(5);
-        cmd[0];
-        uint32_t color = cmd[0];
-        uint32_t point1 = cmd[1];
-        uint32_t point2 = cmd[2];
-        uint32_t point3 = cmd[3];
-        uint32_t point4 = cmd[4];
-        
-
-
-
-    }
-// GP0(20h) - Monochrome three-point polygon, opaque
-// GP0(22h) - Monochrome three-point polygon, semi-transparent
-// GP0(28h) - Monochrome four-point polygon, opaque
-// GP0(2Ah) - Monochrome four-point polygon, semi-transparent
-//   1st  Color+Command     (CcBbGgRrh)
-//   2nd  Vertex1           (YyyyXxxxh)
-//   3rd  Vertex2           (YyyyXxxxh)
-//   4th  Vertex3           (YyyyXxxxh)
-//  (5th) Vertex4           (YyyyXxxxh) (if any)
 
 
 }

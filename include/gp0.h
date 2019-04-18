@@ -2,6 +2,7 @@
 #include "bitwise.h"
 #include "gpu.h"
 #include "inttypes.h"
+#include "draw.h"
 namespace GPU{
         uint32_t texture_window_mask_x;
         uint32_t texture_window_mask_y;
@@ -94,9 +95,9 @@ namespace GPU{
         struct point_t{
             uint32_t x;
             uint32_t y;
-        }
+        };
 
-        typedef union {
+        typedef union{
             struct 
             {
                 uint16_t r : 5;
@@ -123,7 +124,7 @@ namespace GPU{
         namespace gouraud{
             pixel_t point;
             void draw_poly3(){
-                
+
             }
             void draw_poly4(){
 
@@ -193,12 +194,25 @@ namespace GP0_CMDS{
         //   24-31  Command  (Exh)
         // Sets the drawing area corners. The Render commands GP0(20h..7Fh) are automatically clipping any pixels that are outside of this region.
     }
+    uint32_t sign_extend11to32(uint32_t value_11b)
+    {
+        uint16_t mask = 1 << 10;
+        bool sign = (value_11b & mask) ? true : false;
+        uint32_t tmp = value_11b & 0x7ff;
+        uint32_t extendedValue = (sign) ? (0xfffff800 | tmp) : tmp;
+        return extendedValue;
+    }
     void E5_drawing_offset(uint32_t data){
 // GP0(E5h) - Set Drawing Offset (X,Y)
         x_offset = extract(0,10,data);  //   0-10   X-offset (-1024..+1023) (usually within X1,X2 of Drawing Area)
         y_offset = extract(11,21,data); //   11-21  Y-offset (-1024..+1023) (usually within Y1,Y2 of Drawing Area)
         //   22-23  Not used (zero)
         //   24-31  Command  (E5h)
+        x_offset = sign_extend11to32(x_offset);
+        y_offset = sign_extend11to32(y_offset);
+        //     We have to be careful with that one because the x and y
+        // parameters are 11 bit signed two’s complement values. It means that the GPU
+        // can handle negative offsets.
     }
 
     void E6_mask_setting(uint32_t data){
@@ -208,6 +222,48 @@ namespace GP0_CMDS{
         //   2-23  Not used (zero)
         //   24-31 Command  (E6h)
     }
+    
+    
+
+    void GP0_28h_quad_mono_opaque(uint32_t data){
+// GP0(28h) - Monochrome four-point polygon, opaque
+        using namespace Graphics;
+        x__err("画图 Draw quad 未完待续");
+        
+
+        // cmd[0];
+        // uint32_t color = cmd[0];
+        // uint32_t r = (color & 0xff);
+        // uint32_t g = (color>>8) & 0xff;
+        // uint32_t b = (color>>16) & 0xff;
+        // vertex verts[4];
+        // for(int i=0;i<4;i++){
+        //     int x = x_offset + (cmd[i]&0xffff);
+        //     int y = y_offset + (cmd[i]>>16);
+        //     verts[i].r = r;
+        //     verts[i].g = g;
+        //     verts[i].b = b;
+        //     verts[i].a = 255;
+        // }
+        
+        // uint32_t point1 = cmd[1];
+        // uint32_t point2 = cmd[2];
+        // uint32_t point3 = cmd[3];
+        // uint32_t point4 = cmd[4];
+
+
+
+
+    }
+// GP0(20h) - Monochrome three-point polygon, opaque
+// GP0(22h) - Monochrome three-point polygon, semi-transparent
+
+// GP0(2Ah) - Monochrome four-point polygon, semi-transparent
+//   1st  Color+Command     (CcBbGgRrh)
+//   2nd  Vertex1           (YyyyXxxxh)
+//   3rd  Vertex2           (YyyyXxxxh)
+//   4th  Vertex3           (YyyyXxxxh)
+//  (5th) Vertex4           (YyyyXxxxh) (if any)
 
 
 

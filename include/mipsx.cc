@@ -94,7 +94,9 @@ int main()
     MIPSX_SYSTEM psx;
     Monitor monitor(psx); 
     // const int total_cycle =19662070;
-    const int total_cycle =19663630;
+    // const int total_cycle =19663630;
+    // const int total_cycle =19663630;
+     const int total_cycle =24663930;
     for( mipsx_cycle=-2;mipsx_cycle<=total_cycle+1;mipsx_cycle++)
     {   
         // if(mipsx_cycle>=19660026){
