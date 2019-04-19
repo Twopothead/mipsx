@@ -26,23 +26,20 @@ namespace GPU{
 /* temporary hack: if we don't emulate bit 31 correctly , setting bit 19 Vertical Resolution 
  *(GP1.height)  to 1 will lock the BIOS,therefore, here I set GP1.height = 0. or let GP1.raw = (GP1.raw & ~0x00080000)
  */
-            GP1.height = 0;// return (GP1.raw & ~0x00080000) | 0x1c002000; 
-            return GP1.raw;
+            return (GP1.raw & ~0x00080000) | 0x1c002000; 
+            // GP1.height = 0;// return (GP1.raw & ~0x00080000) | 0x1c002000; 
+            // return GP1.raw;
         }
-        uint16_t vram_transfer(){
-            if(!gpu2cpu_transfer.run.active){
-                return 0;
-            }
 
-
-
-        }
         uint32_t gpu_data(){
-            // uint32_t lower;
-            // uint32_t upper;
-
-            // return 0;
-            
+            if(gpu2cpu_transfer.run.active){
+                uint16_t lower = vram_transfer();
+                uint16_t upper = vram_transfer();
+                uint32_t data = upper;
+                data <<= 16;
+                data |= lower;
+                return data;// TODO from vram
+            }
             return GP0;
         }
         // typedef union GPU_Registers{
@@ -64,11 +61,11 @@ namespace GPU{
             {
                 case 0x1f801810:
                     data = gpu_data();
-                    x__err("read GP0 %x",data);
+                    // x__err("read GP0 %x",data);
                     return data;
                 case 0x1f801814:
                     data = gpu_stat();
-                    x__err("read GP1 %x",data);
+                    // x__err("read GP1 %x",data);
                     return data;
                 default:
                     return 0;
@@ -77,6 +74,16 @@ namespace GPU{
         #define REQUIRE(n)  if( cmd.size() < n) return;
 
         void WriteGP0(uint32_t data){
+            if(cpu2gpu_transfer.run.active == true){
+                // TODO vram transfer
+                uint16_t lower = uint16_t(data>>0);
+                uint16_t upper = uint16_t(data>>16);
+                vram_transfer(lower);
+                vram_transfer(upper);
+                // x__log("vram transfer");
+                return;
+            }
+
             cmd.push_back(data);
             switch ( cmd[0]>>24 & 0xff)
             {
@@ -86,6 +93,8 @@ namespace GPU{
                     cmd.erase(cmd.begin());
                     break;
                 case 0x01: // GP0(01h) - Clear Cache
+                    // haven't implemented texture Cache yet
+                    // TODO
                     cmd.clear();
                     break;
                 case 0x02: // GP0(02h) - Fill Rectangle in VRAM
@@ -111,20 +120,39 @@ namespace GPU{
                     break;
 
                 case 0x2c:// GP0(2Ch) - Textured four-point polygon, opaque, texture-blending
-                    //
+                    REQUIRE(9);
+                    GP0_CMDS::GP0_2ch_quad_texture_blend_opaque();
                     cmd.clear();
                     break;
                 case 0x2d:// GP0(2Dh) - Textured four-point polygon, opaque, raw-texture
                     //
                     cmd.clear();
+                    break;
                 case 0x2e:// GP0(2Eh) - Textured four-point polygon, semi-transparent, texture-blending
                     //
                     cmd.clear();
+                    break;
                 case 0x2f:// GP0(2Fh) - Textured four-point polygon, semi-transparent, raw-texture
                     //
                     cmd.clear();
+                    break;
+                
+                case 0x30:// GP0(30h) - Shaded three-point polygon, opaque
+                    REQUIRE(6);
+                    GP0_CMDS::GP0_30h_triangle_shaded_opaque();
+                    cmd.clear();
+                    break;
+
+
+                case 0x38:// GP0(38h) - Shaded four-point polygon, opaque
+                    REQUIRE(8);
+                    GP0_CMDS::GP0_38h_quad_shaded_opaque();
+                    cmd.clear();
+                    break;
 
                 case 0x40:// GP0(40h) - Monochrome line, opaque
+                    cmd.clear();
+                    break;
 
                 case 0x42:// GP0(42h) - Monochrome line, semi-transparent
                     // 
@@ -132,7 +160,13 @@ namespace GPU{
                     break;
 
                 case 0xa0: // GP0(A0h) - Copy Rectangle (CPU to VRAM)
-                    // 
+                    REQUIRE(3);
+                    GP0_CMDS::A0_load_image(data);
+                    cmd.clear();
+                    break;
+                case 0xc0: // GP0(C0h) - Copy Rectangle (VRAM to CPU)
+                    REQUIRE(3);
+                    GP0_CMDS::C0_store_image(data);
                     cmd.clear();
                     break;
 

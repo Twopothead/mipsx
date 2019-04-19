@@ -461,11 +461,8 @@ namespace CONTROL{
                 CTRL_UNIT.o_sl_width_sel = 0b10;// select byte width 8
                 break;
             case 0b100010:/* lwl */
-                // x__err("fuck lwl %d",mipsx_cycle);
-                // exit(0);
-                // while(1){
-                //     ;/* code */
-                // }
+                x__err("fuck lwl %d",mipsx_cycle);
+                exit(0);
                 break;
             // case 0b100110:/* lwr */
 

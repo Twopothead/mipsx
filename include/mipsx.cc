@@ -88,7 +88,7 @@ int recode_cycle = 20;
 // GPR24: t8 00001000 t9 800eb8d8 k0 8005aa18 k1 00000f1c
 // GPR28: gp a0010ff0 sp 801ffd10 s8 801fff00 ra 80050270
 
-// [20359715]已经错了
+
 int main()
 {
     MIPSX_SYSTEM psx;
@@ -96,7 +96,11 @@ int main()
     // const int total_cycle =19662070;
     // const int total_cycle =19663630;
     // const int total_cycle =19663630;
-     const int total_cycle =24663930;
+    // const int total_cycle =24500672;
+    const int total_cycle =24501258;
+    
+    // const int total_cycle =25900972;
+    //  const int total_cycle =21663930;
     for( mipsx_cycle=-2;mipsx_cycle<=total_cycle+1;mipsx_cycle++)
     {   
         // if(mipsx_cycle>=19660026){
@@ -114,6 +118,9 @@ int main()
    
     return 0;
 }
+
+// [24500671] [24500672]是vram transfer的分界点
+
 //0x5c86260a
 // Our next stop will be an unhandled LW at address 0x1f801814. This register
 // is GPUSTAT when read and GP1 when written.

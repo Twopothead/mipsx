@@ -422,6 +422,33 @@ class MIPSX_SYSTEM
             std::cout<<(char)cpu.gp.R04_A0;
         }
     }
+    void channel2_vramRead(){
+        using namespace DMA;
+        uint32_t addr = channels[DMA_GPU].address.addr & 0x1fffff;
+        uint32_t *ptr = (uint32_t*)(memory.real_main_Ram + addr);
+        uint32_t bs =  channels[DMA_GPU].counter.syncMode1.blockSize;
+        uint32_t ba =  channels[DMA_GPU].counter.syncMode1.blockCount;
+        // BC/BS/BA can be in range 0001h..FFFFh (or 0=10000h)
+        bs = (bs!=0)?bs:0x10000;
+        ba = (ba!=0)?ba:0x10000;
+        uint32_t size =  bs * ba;
+        uint32_t tmpaddr = addr;
+        for(uint32_t a=0;a<ba;a++){
+            for(uint32_t s=0;s<bs;s++){
+                memory.write_wrapper( tmpaddr, GPU::read(0x1f801810,32) ,32);
+                tmpaddr+=4;
+            }
+        } 
+        channels[DMA_GPU].address.addr = tmpaddr;
+// SyncMode, Transfer Synchronisation/Mode (0-3):
+//             0  Start immediately and transfer all at once (used for CDROM, OTC)
+//             1  Sync blocks to DMA requests   (used for MDEC, SPU, and GPU-data)
+//             2  Linked-List mode              (used for GPU-command-lists)
+// In SyncMode=0, the hardware doesn't update the MADR registers (it will contain the start address even during and after the transfer) (unless Chopping is enabled, in that case it does update MADR, same does probably also happen when getting interrupted by a higher priority DMA channel).
+// In SyncMode=1 and SyncMode=2, the hardware does update MADR (it will contain the start address of the currently transferred block; at transfer end, it'll hold the end-address in SyncMode=1, or the 00FFFFFFh end-code in SyncMode=2)
+        // channels[DMA_GPU].address.addr += size;
+        // channels[DMA_GPU].control.enable = 0;
+    }
     void channel2_vramWrite(){
         using namespace DMA;
         uint32_t addr = channels[DMA_GPU].address.addr & 0x1fffff;
@@ -432,8 +459,14 @@ class MIPSX_SYSTEM
         bs = (bs!=0)?bs:0x10000;
         ba = (ba!=0)?ba:0x10000;
         uint32_t size =  bs * ba; 
-        GPU::WriteList(ptr,size);// Read MainRam to get GP commands, then GPU write Vram (framebuffer)
-        channels[DMA_GPU].address.addr += size;
+        // GPU::WriteList(ptr,size);// Read MainRam to get GP commands, then GPU write Vram (framebuffer)
+        while(size--){
+                // x__err("(block copy)send to GP0 %x",*ptr);
+                GPU::WriteGP0( *ptr++ );
+
+        }
+        channels[DMA_GPU].address.addr += size<<2;
+        // channels[DMA_GPU].address.addr += size;
         // channels[DMA_GPU].control.enable = 0;
     }
     void channel2_linkedlist(){
@@ -452,6 +485,9 @@ class MIPSX_SYSTEM
         }while (nextaddr != 0xffffff);
         using namespace Interrupt_Control;
         irq_channel(DMA_GPU);// 2
+
+        //?
+        channels[DMA_GPU].address.addr = 0x00ffffff;
        // channels[DMA_GPU].control.enable = 0;
     }
     void do_Channel2_GPU(){
@@ -459,9 +495,11 @@ class MIPSX_SYSTEM
             switch (channels[DMA_GPU].control.raw)
             {
                 case 0x01000200:// (VramRead)
-                     ;// TODO
+                    x__log("vram Read");
+                    channel2_vramRead();// TODO
                     break;
                 case 0x01000201:// (VramWrite)
+                    x__log("vram Write");
                     channel2_vramWrite();
                     break;
                 case 0x01000401:// (List)

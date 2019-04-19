@@ -3,6 +3,7 @@
 #include "gpu.h"
 #include "inttypes.h"
 #include "draw.h"
+#include "vram.h"
 namespace GPU{
         uint32_t texture_window_mask_x;
         uint32_t texture_window_mask_y;
@@ -97,48 +98,67 @@ namespace GPU{
             uint32_t y;
         };
 
-        typedef union{
-            struct 
-            {
-                uint16_t r : 5;
-                uint16_t g : 5;
-                uint16_t b : 5;
-                uint16_t msb :1;
-            };
-            struct 
-            {
-                uint16_t left  : 8;
-                uint16_t right : 8;
-            };
-            struct 
-            {
-                uint16_t ll : 4;
-                uint16_t ml : 4;
-                uint16_t mr : 4;
-                uint16_t rr : 4;
-            };
-            uint16_t raw;// Each "pixel" has the size of one word (16 bit).
-        }pixel_t;
+        // namespace gouraud{
+        //     pixel_t point;
+        //     void draw_poly3(){
 
-        pixel_t frame_buffer[1024][512];// The frame buffer has a size of 1 MB and is treated as a space of 1024pixels wide and 512 pixels high.
-        namespace gouraud{
-            pixel_t point;
-            void draw_poly3(){
+        //     }
+        //     void draw_poly4(){
 
+        //     }
+        // }
+
+        CPU2GPU_transfer_t  cpu2gpu_transfer;
+        GPU2CPU_transfer_t  gpu2cpu_transfer;
+        // using namespace VRAM;
+        void vram_transfer(uint16_t data){// be used frequently
+            if(!cpu2gpu_transfer.run.active){
+                return;
             }
-            void draw_poly4(){
-
+            VRAM::vwrite(
+                cpu2gpu_transfer.reg.x + cpu2gpu_transfer.run.x,
+                cpu2gpu_transfer.reg.y + cpu2gpu_transfer.run.y,
+                uint16_t(data)
+            );
+            cpu2gpu_transfer.run.x++;
+            if(cpu2gpu_transfer.run.x == cpu2gpu_transfer.reg.w){
+                cpu2gpu_transfer.run.x = 0;
+                cpu2gpu_transfer.run.y ++;
+                if(cpu2gpu_transfer.run.y == cpu2gpu_transfer.reg.h){
+                    cpu2gpu_transfer.run.y = 0;
+                    cpu2gpu_transfer.run.active = false;// finish
+                    x__log("cpu2vram transfer finish");
+                }
             }
         }
 
+        uint16_t vram_transfer(){// overload , but be used not so often
+            if(!gpu2cpu_transfer.run.active){
+                return 0;
+            }
+            uint16_t data = VRAM::vread(
+                gpu2cpu_transfer.reg.x + gpu2cpu_transfer.run.x,
+                gpu2cpu_transfer.reg.y + gpu2cpu_transfer.run.y);
+
+            gpu2cpu_transfer.run.x++;
+            if(gpu2cpu_transfer.run.x == gpu2cpu_transfer.reg.w){
+                gpu2cpu_transfer.run.x = 0;
+                gpu2cpu_transfer.run.y ++;
+                if(gpu2cpu_transfer.run.y == gpu2cpu_transfer.reg.h){
+                    gpu2cpu_transfer.run.y = 0;
+                    gpu2cpu_transfer.run.active = false;// finish
+                    x__log("vram2cpu transfer finish");
+                }
+            }
+            return data;
+        }
 
         std::vector<unsigned int> cmd;// It (=GP0 only?) has a 64-byte (16-word) command FIFO buffer.
         
         GPUstat_t GP1;
         GPUread_t GP0;
 
-        CPU2GPU_transfer_t  cpu2gpu_transfer;
-        GPU2CPU_transfer_t  gpu2cpu_transfer;
+
         
         
 }
@@ -147,12 +167,6 @@ namespace GP0_CMDS{
     using namespace Bitwise;
     using namespace GPU;
     #define get_bit(nr,value) ( ( (value>>nr) & 0x1) ? 0b1:0b0 )
-    // struct {
-    //     bool rectangle_texture_x_flip;// mirror textured rectangles along the x axis
-    //     bool rectangle_texture_y_flip;// mirror textured rectangles along the y axis
-    // }XY_Flip_t;
-
-    // XY_Flip_t XY_flip;
 
     void E1_draw_mode_setting(uint32_t data){
 // GP0(E1h) - Draw Mode setting (aka "Texpage")
@@ -250,10 +264,6 @@ namespace GP0_CMDS{
         // uint32_t point2 = cmd[2];
         // uint32_t point3 = cmd[3];
         // uint32_t point4 = cmd[4];
-
-
-
-
     }
 // GP0(20h) - Monochrome three-point polygon, opaque
 // GP0(22h) - Monochrome three-point polygon, semi-transparent
@@ -264,6 +274,68 @@ namespace GP0_CMDS{
 //   3rd  Vertex2           (YyyyXxxxh)
 //   4th  Vertex3           (YyyyXxxxh)
 //  (5th) Vertex4           (YyyyXxxxh) (if any)
+    void A0_load_image(uint32_t data){//   1st  Command           (Cc000000h)
+// GP0(A0h) - Copy Rectangle (CPU to VRAM)
+        cpu2gpu_transfer.reg.x = cmd[1] & 0xffff;//   2nd  Destination Coord (YyyyXxxxh)  ;Xpos counted in halfwords
+        cpu2gpu_transfer.reg.y = cmd[1] >> 16;
+        cpu2gpu_transfer.reg.w = cmd[2] & 0xffff;//   3rd  Width+Height      (YsizXsizh)  ;Xsiz counted in halfwords
+        cpu2gpu_transfer.reg.h = cmd[2] >> 16;
+        //   ...  Data              (...)      <--- usually transferred via DMA
+        // uint32_t imagesize = cpu2gpu_transfer.reg.w*cpu2gpu_transfer.reg.h;
+        // imagesize = (imagesize+1);
+        // uint32_t gp0_words_remaining = (imagesize)/2;
+        // x__log("gp0_words_remaining %d",gp0_words_remaining);
+        cpu2gpu_transfer.run.x = 0;
+        cpu2gpu_transfer.run.y = 0;
+        cpu2gpu_transfer.run.active = true;
+    }
+    void C0_store_image(uint32_t data){//   1st  Command           (Cc000000h) ;\
+// GP0(C0h) - Copy Rectangle (VRAM to CPU)
+        gpu2cpu_transfer.reg.x = cmd[1] & 0xffff;//   2nd  Source Coord      (YyyyXxxxh) ; write to GP0 port (as usually)
+        gpu2cpu_transfer.reg.y = cmd[1] >> 16;
+        gpu2cpu_transfer.reg.w = cmd[2] & 0xffff;//   3rd  Width+Height      (YsizXsizh) ;/
+        gpu2cpu_transfer.reg.h = cmd[2] >> 16;
+
+        gpu2cpu_transfer.run.x = 0;
+        gpu2cpu_transfer.run.y = 0;
+        gpu2cpu_transfer.run.active = true;
+
+
+    }
+    void GP0_38h_quad_shaded_opaque(){
+// GP0(38h) - Shaded four-point polygon, opaque
+// GP0(3Ah) - Shaded four-point polygon, semi-transparent
+
+
+//   1st  Color1+Command    (CcBbGgRrh)
+//   2nd  Vertex1           (YyyyXxxxh)
+//   3rd  Color2            (00BbGgRrh)
+//   4th  Vertex2           (YyyyXxxxh)
+//   5th  Color3            (00BbGgRrh)
+//   6th  Vertex3           (YyyyXxxxh)
+//  (7th) Color4            (00BbGgRrh) (if any)
+//  (8th) Vertex4           (YyyyXxxxh) (if any)
+
+
+    }
+    void GP0_30h_triangle_shaded_opaque(){
+    //GP0(30h) - Shaded three-point polygon, opaque
+
+    }
+    void GP0_2ch_quad_texture_blend_opaque(){
+    // GP0(2Ch) - Textured four-point polygon, opaque, texture-blending
+
+//   1st  Color+Command     (CcBbGgRrh) (color is ignored for raw-textures)
+//   2nd  Vertex1           (YyyyXxxxh)
+//   3rd  Texcoord1+Palette (ClutYyXxh)
+//   4th  Vertex2           (YyyyXxxxh)
+//   5th  Texcoord2+Texpage (PageYyXxh)
+//   6th  Vertex3           (YyyyXxxxh)
+//   7th  Texcoord3         (0000YyXxh)
+//  (8th) Vertex4           (YyyyXxxxh) (if any)
+//  (9th) Texcoord4         (0000YyXxh) (if any)
+    }
+
 
 
 
