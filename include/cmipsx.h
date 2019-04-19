@@ -114,6 +114,7 @@ class MIPSX_SYSTEM
         uint32_t qa,qb;// get
         qa = cpu.gp.register_file[rs];
         qb = cpu.gp.register_file[rt];
+        ID_EX.non_aligned_use_tregvalue = qb;/*for lwl,lwr,swl,swr*/
         fwda = ForwardingUnit::calcuforwardA(CTRL_UNIT.rs);
         fwdb = ForwardingUnit::calcuforwardB(CTRL_UNIT.rt);
         setFWDA_MUX(fwda,qa,EX_ealu,MEM_malu,MEM_mmo);
@@ -222,6 +223,9 @@ class MIPSX_SYSTEM
         ID_EX.ewmem = wmem;
         ID_EX.ejal = jal;
         ID_EX.elink = CTRL_UNIT.o_link;
+        ID_EX.elwl = CTRL_UNIT.o_lwl;
+        ID_EX.elwr = CTRL_UNIT.o_lwr;
+        
         
         ID_EX.elbu = lbu;
         ID_EX.elhu = lhu;
@@ -314,6 +318,9 @@ class MIPSX_SYSTEM
         EX_MEM.mlbu = ID_EX.elbu;
         EX_MEM.mlhu = ID_EX.elhu;
         EX_MEM.mwriteHILO = ID_EX.ewriteHILO;
+        EX_MEM.mlwl = ID_EX.elwl;
+        EX_MEM.mlwr = ID_EX.elwr;
+        EX_MEM.non_aligned_use_tregvalue = ID_EX.non_aligned_use_tregvalue;
         EX_MEM.PCm = ID_EX.PCe;
         if(show_stage_log)
             printf("EX %08x\t", EX_MEM.IR);
@@ -336,11 +343,20 @@ class MIPSX_SYSTEM
         setMWIDTH_MUX(storeload_width_sel);
         storeload_width = MWIDTH_MUX.o_load_store_width;
         bool WriteMem = (!Stall) ? EX_MEM.mwmem : false;// if no stall
+        uint32_t non_aligned_addr = 0;
+        bool Non_aligned_RW_memstage  = ( EX_MEM.mlwl || EX_MEM.mlwr || EX_MEM.mswl || EX_MEM.mswr );
+        if(Non_aligned_RW_memstage){/* Non-aligned read or write */
+            non_aligned_addr = MEM_malu; 
+            MEM_WB.non_aligned_memaddr = MEM_malu;
+            MEM_malu &= ~0x3;/* leftmost 2 bits => 0b00 */
+        }
 
-        if(WriteMem)
+// Common 
+        if(WriteMem & !Non_aligned_RW_memstage)
             memory.write_wrapper(MEM_malu,EX_MEM.mb,storeload_width);//memory.write<uint32_t>(MEM_malu,EX_MEM.mb);
+        
         // MemRead
-        if(EX_MEM.mm2reg){// 若MemtoReg为true,必然要MemRead
+        if(EX_MEM.mm2reg & !Non_aligned_RW_memstage){// 若MemtoReg为true,必然要MemRead
             // x__err("%x %x",MEM_malu,storeload_width);
             // printf("MEM_malu%x",MEM_malu);
             mmo = memory.read_wrapper(MEM_malu,storeload_width);
@@ -358,6 +374,37 @@ class MIPSX_SYSTEM
                     break;
             }
         }
+// Non aligned Cases
+        if( EX_MEM.mswl  && WriteMem){// swl , the PSX runs exclusively in little endian
+            uint32_t newdata = 0;
+            uint32_t treg =  EX_MEM.non_aligned_use_tregvalue;
+            switch (non_aligned_addr % 4)
+            {
+                case 0: newdata = EX_MEM.mb; break;
+                case 1: newdata = (EX_MEM.mb & 0xff000000) | (treg>>8); break;
+                case 2: newdata = (EX_MEM.mb & 0xffff0000) | (treg>>16); break;
+                case 3: newdata = (EX_MEM.mb & 0xffffff00) | (treg>>24); break;
+            }
+            memory.write_wrapper(MEM_malu,newdata,32);
+        }
+
+        if( EX_MEM.mswr   && WriteMem){// swr , the PSX runs exclusively in little endian
+            uint32_t newdata = 0;
+            uint32_t treg =  EX_MEM.non_aligned_use_tregvalue;
+            switch (non_aligned_addr % 4)
+            {
+                case 0: newdata = EX_MEM.mb; break;
+                case 1: newdata = (EX_MEM.mb & 0x00ffffff) | (treg>>8); break;
+                case 2: newdata = (EX_MEM.mb & 0x0000ffff) | (treg>>16); break;
+                case 3: newdata = (EX_MEM.mb & 0x000000ff) | (treg>>24); break;
+            }
+            memory.write_wrapper(MEM_malu,newdata,32);
+        }
+
+        if( (EX_MEM.mlwl || EX_MEM.mlwr) && EX_MEM.mm2reg  ){
+            mmo = memory.read_wrapper(MEM_malu,32);
+        }
+
         MEM_mmo= mmo ;// for forwardA 
         MEM_WB.IR = EX_MEM.IR;
         MEM_WB.wwreg = EX_MEM.mwreg;
@@ -366,6 +413,9 @@ class MIPSX_SYSTEM
         MEM_WB.walu = EX_MEM.malu;
         MEM_WB.wmo = mmo;
         MEM_WB.writeHILO = EX_MEM.mwriteHILO;
+        MEM_WB.non_aligned_use_tregvalue = EX_MEM.non_aligned_use_tregvalue;
+        MEM_WB.wlwl = EX_MEM.mlwl;
+        MEM_WB.wlwr = EX_MEM.mlwr;
     
 
     MEM_WB.debug_wbPC = EX_MEM.PCm;
@@ -397,15 +447,56 @@ class MIPSX_SYSTEM
         setWM2REG_MUX(MEM_WB.wm2reg,MEM_WB.wmo,MEM_WB.walu);
         wdi = WM2REG_MUX.o_wdi;
         bool WriteReg = (!Stall) ? MEM_WB.wwreg : false;
-        if(WriteReg){            
+
+        bool Non_aligned_wbstage = (MEM_WB.wlwl || MEM_WB.wlwr);
+// Common 
+        if(WriteReg && !Non_aligned_wbstage){            
             gp.set_reg(MEM_WB.wrn,wdi);// Regs[MEM_WB.wrn] = wdi;
             //这样忽略写信号为真，而reg是$0的情况,(HI LO)相关的指令可能会发生这种情况
         }
+// Non-aligned cases
+        if(MEM_WB.wlwl && WriteReg){// lwl , the PSX runs exclusively in little endian
+            uint32_t newdata = 0;
+            uint32_t treg = MEM_WB.non_aligned_use_tregvalue;
+            switch (MEM_WB.non_aligned_memaddr % 4)
+            {
+                case 0:newdata = wdi; break;
+                case 1:newdata = ( (treg & 0x000000ff) | (wdi << 8)  ); break;
+                case 2:newdata = ( (treg & 0x0000ffff) | (wdi << 16) ); break; 
+                case 3:newdata = ( (treg & 0x00ffffff) | (wdi << 24) ); break;
+            }
+            gp.set_reg(MEM_WB.wrn,newdata);
+        }
+        if(MEM_WB.wlwr && WriteReg){// lwr , the PSX runs exclusively in little endian
+            uint32_t newdata = 0;
+            uint32_t treg = MEM_WB.non_aligned_use_tregvalue;
+            switch (MEM_WB.non_aligned_memaddr % 4)
+            {
+                case 0:newdata = wdi;break;
+                case 1:newdata = ( (treg & 0xffffff00) | (wdi >> 24) ); break;
+                case 2:newdata = ( (treg & 0xffff0000) | (wdi >> 16) ); break;
+                case 3:newdata = ( (treg & 0xff000000) | (wdi >> 8)  ); break;
+            }
+            gp.set_reg(MEM_WB.wrn,newdata);
+        }
+
+
         bool WriteHiLo = (!Stall) ? MEM_WB.writeHILO : false;
         if(WriteHiLo){
             HiLORegs::HI = mirror_hilo::mirror_hi;
             HiLORegs::LO = mirror_hilo::mirror_lo;
         }
+            //         switch (non_aligned_addr % 4)
+            // {
+            //     case 0:
+            //         break;
+            //     case 1:
+            //         break;
+            //     case 2:
+            //         break;
+            //     case 3:
+            //         break;
+            // }
 
 
         if(show_stage_log)

@@ -40,6 +40,11 @@ namespace pipeline_registers
         bool emfLO;
         bool ewriteHILO;
         bool ecancel;
+        bool elwl;
+        bool elwr;
+        bool eswl;
+        bool eswr;
+        uint32_t non_aligned_use_tregvalue;
         uint32_t pipeline_cp0_regs[31];/*注意，这只是pipeling registers里暂存的cp0 regs，不是cp0 regs本身*/
         uint32_t PCe;
     } ID_EX;
@@ -56,6 +61,11 @@ namespace pipeline_registers
         bool mlbu;
         bool mlhu;
         bool mwriteHILO;
+        bool mlwl;
+        bool mlwr;
+        bool mswl;
+        bool mswr;
+        uint32_t non_aligned_use_tregvalue;
         uint32_t PCm;
     } EX_MEM;
     struct MEM_WB_t
@@ -67,6 +77,10 @@ namespace pipeline_registers
         uint32_t walu;
         uint32_t wrn;
         bool writeHILO;
+        bool wlwl;
+        bool wlwr;
+        uint32_t non_aligned_use_tregvalue;
+        uint32_t non_aligned_memaddr;
         uint32_t debug_wbPC;
     } MEM_WB;
     void clear_pipeline_registers()

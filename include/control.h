@@ -71,6 +71,10 @@ namespace CONTROL{
         bool o_mfLO;
         bool o_mtHI;
         bool o_mtLO;
+        bool o_lwl;
+        bool o_lwr;
+        bool o_swl;
+        bool o_swr;
     }CTRL_UNIT;
 
     struct {
@@ -286,6 +290,10 @@ namespace CONTROL{
         CTRL_UNIT.o_mfLO = false;
         CTRL_UNIT.o_mtHI = false;
         CTRL_UNIT.o_mtLO = false;
+        CTRL_UNIT.o_lwl = false;
+        CTRL_UNIT.o_lwr = false;
+        CTRL_UNIT.o_swl = false;
+        CTRL_UNIT.o_swr = false;
         CTRL_CP0_UNIT.o_cancel = false;
         CTRL_CP0_UNIT.o_isbr = false;
         CTRL_CP0_UNIT.o_ove = false;
@@ -461,12 +469,45 @@ namespace CONTROL{
                 CTRL_UNIT.o_sl_width_sel = 0b10;// select byte width 8
                 break;
             case 0b100010:/* lwl */
+                CTRL_UNIT.o_lwl = true;
+                ALUOP = ALU_ADD;
+                CTRL_UNIT.o_regrt = true;
+                CTRL_UNIT.o_m2reg = true;
+                CTRL_UNIT.o_aluimm = true;
+                CTRL_UNIT.o_wreg = true;
+                CTRL_UNIT.o_sext = true;
                 x__err("fuck lwl %d",mipsx_cycle);
+                // exit(0);
+                break;
+            case 0b100110:/* lwr */
+                CTRL_UNIT.o_lwr = true;
+                ALUOP = ALU_ADD;
+                CTRL_UNIT.o_regrt = true;
+                CTRL_UNIT.o_m2reg = true;
+                CTRL_UNIT.o_aluimm = true;
+                CTRL_UNIT.o_wreg = true;
+                CTRL_UNIT.o_sext = true;
+                x__err("fuck lwr %d",mipsx_cycle);
                 exit(0);
                 break;
-            // case 0b100110:/* lwr */
+            case 0b101010:/* swl */
+                CTRL_UNIT.o_swl = true;
+                CTRL_UNIT.o_aluimm = true;
+                CTRL_UNIT.o_wmem = true;
+                CTRL_UNIT.o_sext = true;
+                ALUOP = ALU_ADD;
+                x__err("fuck swl %d",mipsx_cycle);
+                break;
+            case 0b101110:/* swr */
+                CTRL_UNIT.o_swr = true;
+                CTRL_UNIT.o_aluimm = true;
+                CTRL_UNIT.o_wmem = true;
+                CTRL_UNIT.o_sext = true;
+                ALUOP = ALU_ADD;
+                x__err("fuck swr %d",mipsx_cycle);
+                break;
 
-            //     break;
+            
             case 0b100100:/* lbu */
                 ALUOP = ALU_ADD;
                 CTRL_UNIT.o_regrt = true;
