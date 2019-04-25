@@ -144,6 +144,7 @@ namespace GPU{
                     REQUIRE(6);
                     GP0_CMDS::GP0_30h_triangle_shaded_opaque();
                     cmd.clear();
+                    // printf(" 30tri");
                     // while(1){
                     //     ;/* code */
                     // }

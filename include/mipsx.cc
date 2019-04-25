@@ -102,7 +102,8 @@ int main( int argc, char* args[] )
     // const int total_cycle =24500672;
     // const int total_cycle =24501258;
     // const int total_cycle =34502258;
-    const int total_cycle =84502258;
+    // const int total_cycle =84502258;
+    const int total_cycle =104502258;
     PSX_UI::psx_ui_init();
     
     
