@@ -476,8 +476,7 @@ namespace CONTROL{
                 CTRL_UNIT.o_aluimm = true;
                 CTRL_UNIT.o_wreg = true;
                 CTRL_UNIT.o_sext = true;
-                x__err("fuck lwl %d",mipsx_cycle);
-                // exit(0);
+                // x__err("fuck lwl %d",mipsx_cycle);
                 break;
             case 0b100110:/* lwr */
                 CTRL_UNIT.o_lwr = true;
@@ -487,8 +486,7 @@ namespace CONTROL{
                 CTRL_UNIT.o_aluimm = true;
                 CTRL_UNIT.o_wreg = true;
                 CTRL_UNIT.o_sext = true;
-                x__err("fuck lwr %d",mipsx_cycle);
-                exit(0);
+                // x__err("fuck lwr %d",mipsx_cycle);
                 break;
             case 0b101010:/* swl */
                 CTRL_UNIT.o_swl = true;
@@ -496,7 +494,7 @@ namespace CONTROL{
                 CTRL_UNIT.o_wmem = true;
                 CTRL_UNIT.o_sext = true;
                 ALUOP = ALU_ADD;
-                x__err("fuck swl %d",mipsx_cycle);
+                // x__err("fuck swl %d",mipsx_cycle);
                 break;
             case 0b101110:/* swr */
                 CTRL_UNIT.o_swr = true;
@@ -504,7 +502,7 @@ namespace CONTROL{
                 CTRL_UNIT.o_wmem = true;
                 CTRL_UNIT.o_sext = true;
                 ALUOP = ALU_ADD;
-                x__err("fuck swr %d",mipsx_cycle);
+                // x__err("fuck swr %d",mipsx_cycle);
                 break;
 
             

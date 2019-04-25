@@ -103,10 +103,13 @@ namespace GPU{
                     break;
 // GP0(20h..3Fh)            - Render Polygons
                 // case 0x20:// GP0(20h) - Monochrome three-point polygon, opaque
-                // case 0x22:// GP0(22h) - Monochrome three-point polygon, semi-transparent
-                //     // POLY_F3
-                //     cmd.clear();
-                //     break;
+                case 0x22:// GP0(22h) - Monochrome three-point polygon, semi-transparent
+                    // POLY_F3
+                    REQUIRE(4);
+                    GP0_CMDS::GP0_22h();
+                    cmd.clear();
+                    break;
+                
 
                 case 0x28:// GP0(28h) - Monochrome four-point polygon, opaque
                     REQUIRE(5);
@@ -141,6 +144,10 @@ namespace GPU{
                     REQUIRE(6);
                     GP0_CMDS::GP0_30h_triangle_shaded_opaque();
                     cmd.clear();
+                    // while(1){
+                    //     ;/* code */
+                    // }
+                    
                     break;
 
 

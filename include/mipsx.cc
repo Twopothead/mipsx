@@ -6,6 +6,8 @@
 #include "cmipsx.h"
 #include "monitor.h"
 #include "debug.h"
+#include "ui.h"
+// https://packages.ubuntu.com/source/bionic/allegro5
 
 int recode_cycle = 20;
 // syscall 
@@ -89,7 +91,8 @@ int recode_cycle = 20;
 // GPR28: gp a0010ff0 sp 801ffd10 s8 801fff00 ra 80050270
 
 
-int main()
+// int main()
+int main( int argc, char* args[] )
 {
     MIPSX_SYSTEM psx;
     Monitor monitor(psx); 
@@ -97,7 +100,15 @@ int main()
     // const int total_cycle =19663630;
     // const int total_cycle =19663630;
     // const int total_cycle =24500672;
-    const int total_cycle =24501258;
+    // const int total_cycle =24501258;
+    // const int total_cycle =34502258;
+    const int total_cycle =84502258;
+    PSX_UI::psx_ui_init();
+    
+    
+
+
+  
     
     // const int total_cycle =25900972;
     //  const int total_cycle =21663930;
@@ -114,7 +125,12 @@ int main()
     }
     // printf("%x",R3000_CP0::cp0_regs.EPC);
     //x__err("[19258618] 0x8cce0000	lw  R14, [R06 + 0x0]\n这里出错了,此时R14是0x1f801814,这里是从GPU加载状态,然而,现在GPU没有实现");
-    
+    // al_flip_display();
+
+    // al_rest(10.0);
+
+    // al_destroy_display(PSX_UI::display);
+    PSX_UI::psx_ui_quit();
    
     return 0;
 }
