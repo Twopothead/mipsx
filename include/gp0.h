@@ -130,6 +130,7 @@ namespace GPU{
                     cpu2gpu_transfer.run.y = 0;
                     cpu2gpu_transfer.run.active = false;// finish
                     x__log("cpu2vram transfer finish");
+    
                 }
             }
         }
@@ -266,8 +267,8 @@ namespace GP0_CMDS{
         glEnd();
     }
     void GP0_22h(){
-        POLY_F3();
-        SDL_GL_SwapWindow(PSX_UI::window);
+        // POLY_F3();
+        // SDL_GL_SwapWindow(PSX_UI::window);
     }
     void POLY_F4(){
         glBegin(GL_QUADS);
@@ -294,18 +295,15 @@ namespace GP0_CMDS{
     //         SDL_FillRect( PSX_UI::surface, NULL, SDL_MapRGB( PSX_UI::surface->format, 0x11, 0x22, 0x33 ) );
     // SDL_UpdateWindowSurface( PSX_UI::window );
         x__err("画图 Draw quad 未完待续");
-        // al_clear_to_color(al_map_rgb(100,0,0));
-        // al_flip_display();//displaying the window (the buffer)
         uint32_t r = cmd[0] & 0xff;
         uint32_t g = (cmd[0] >> 8) & 0xff;
         uint32_t b = (cmd[0] >> 16) & 0xff;
         vertex verts[4];
-        
         for(int i=0;i<4;i++){
             int x = x_offset + (int16_t) (cmd[i+1] & 0xffff);
             int y = y_offset + (int16_t) (cmd[i+1] >> 16);
             verts[i].x = (float)x / 640.0f;
-            verts[i].y = (float)y / 480.0f;
+            verts[i].y = 1-(float)y / 480.0f;
             printf("%d %d\n",x,y);
             verts[i].r = r;
             verts[i].g = g;
@@ -341,92 +339,12 @@ namespace GP0_CMDS{
 // 0 480    3
 // 680 480  4
 // 640 0    2
-//   float polygon[8] = { 0.0f,0.0f,\
-//                         0.0f,100.0f,\
-//                         200.0f,100.0f,\
-//                         200.0f,0.0f };
+
 
 // https://www.allegro.cc/forums/thread/616776
 // Allegro manual said:
 // When the y-axis is facing downwards (the usual), the coordinates must be ordered anti-clockwise.
-        // float polygon[8];
-        // polygon[0] = verts[0].x;
-        // polygon[1] = verts[0].y;
-        // polygon[2] = verts[2].x;
-        // polygon[3] = verts[2].y;
-        // polygon[4] = verts[3].x;
-        // polygon[5] = verts[3].y;
-        // polygon[6] = verts[1].x;
-        // polygon[7] = verts[1].y;
-        // float polygon[8] = { 640.0f, 100.0f, 640.0f, 300.0f, 380.0f, 350.0f, 200.0f, 200.0f };
-        
-        // al_draw_filled_rectangle(verts[0].x, verts[0].y, verts[3].x, verts[3].y, color);
-        // al_draw_filled_polygon(polygon, 8, getvcolor(verts[0]));
-        // al_flip_display();
-        // while(1){
-        //     ;/* code */
-        // }
-        
-        
-        // printf("%lf %lf %lf %lf",verts[0].x, verts[0].y, verts[3].x, verts[3].y);
 
-        
-//     ALLEGRO_COLOR white = al_map_rgb_f(1, 1, 1);
-// ALLEGRO_VERTEX v[] = {
-// {.x = 128, .y = 0, .z = 0, .color = white, .u = 128, .v = 0},
-// {.x = 0, .y = 256, .z = 0, .color = white, .u = 0, .v = 256},
-// {.x = 256, .y = 256, .z = 0, .color = white, .u = 256, .v = 256}};
-// al_draw_prim(v, NULL, 0, 0, 3, ALLEGRO_PRIM_TRIANGLE_LIST);
-     
-        
-        // drawQuad(verts);
-        // SDL_GL_SwapWindow(PSX_UI::window);
-    // #include <GLES3/gl3.h>
-    // glUseProgram(program);
-    // glGenVertexArrays()
-    // glVertex2d
-    //     	glUseProgram(program);
-	// glBindBuffer( GL_ARRAY_BUFFER, vbo );
-	// glBufferData( GL_ARRAY_BUFFER, sizeof( vertex ) * 4, verts, GL_STATIC_DRAW );
-	// glBindVertexArray( vao );
-    // glUseProgram();
-	// glDrawArrays( GL_TRIANGLE_STRIP, 0, 4 );
-	// glDrawArrays( GL_TRIANGLE_STRIP, 0, 4 );
-        
-    // SDL_FillRect( PSX_UI::surface, NULL, SDL_MapRGB( PSX_UI::surface->format, 0x00, 0x00, 0xff ) );
-    // glClearColor( 0, 0, 0, 0 );
-    // SDL_UpdateWindowSurface( PSX_UI::window );
-     /*
-     * Swap the buffers. This this tells the driver to
-     * render the next frame from the contents of the
-     * back-buffer, and to set all rendering operations
-     * to occur on what was the front-buffer.
-     *
-     * Double buffering prevents nasty visual tearing
-     * from the application drawing on areas of the
-     * screen that are being updated at the same time.
-     */
-    // SDL_GL_SwapWindow(PSX_UI::window);
-    // SDL_GL_SwapBuffers();
-        // cmd[0];
-        // uint32_t color = cmd[0];
-        // uint32_t r = (color & 0xff);
-        // uint32_t g = (color>>8) & 0xff;
-        // uint32_t b = (color>>16) & 0xff;
-        // vertex verts[4];
-        // for(int i=0;i<4;i++){
-        //     int x = x_offset + (cmd[i]&0xffff);
-        //     int y = y_offset + (cmd[i]>>16);
-        //     verts[i].r = r;
-        //     verts[i].g = g;
-        //     verts[i].b = b;
-        //     verts[i].a = 255;
-        // }
-        
-        // uint32_t point1 = cmd[1];
-        // uint32_t point2 = cmd[2];
-        // uint32_t point3 = cmd[3];
-       // uint32_t point4 = cmd[4];
     }
 // GP0(20h) - Monochrome three-point polygon, opaque
 // GP0(22h) - Monochrome three-point polygon, semi-transparent
@@ -451,6 +369,7 @@ namespace GP0_CMDS{
         cpu2gpu_transfer.run.x = 0;
         cpu2gpu_transfer.run.y = 0;
         cpu2gpu_transfer.run.active = true;
+
     }
     void C0_store_image(uint32_t data){//   1st  Command           (Cc000000h) ;\
 // GP0(C0h) - Copy Rectangle (VRAM to CPU)
@@ -485,7 +404,7 @@ namespace GP0_CMDS{
         int x = x_offset + (int16_t) (cmd[i*2+1] & 0xffff);
         int y = y_offset + (int16_t) (cmd[i*2+1] >> 16);
         verts[i].x = (float) x / 640.0f ;
-        verts[i].y = (float)y / 480.0f;
+        verts[i].y = 1-(float)y / 480.0f;
         printf("%d %d\n",x,y);
         if(i==0){
             verts[i].r = cmd[0] & 0xff;
@@ -502,33 +421,13 @@ namespace GP0_CMDS{
     glShadeModel(GL_FLAT);
     glColor3f(verts[0].r,verts[0].g,verts[0].b);
     glVertex3f(verts[0].x,verts[0].y,0.0f);
-    glColor3f(verts[1].r,verts[1].g,verts[1].b);
-    glVertex3f(verts[1].x,verts[1].y,0.0f);
     glColor3f(verts[2].r,verts[2].g,verts[2].b);
     glVertex3f(verts[2].x,verts[2].y,0.0f);
+    glColor3f(verts[1].r,verts[1].g,verts[1].b);
+    glVertex3f(verts[1].x,verts[1].y,0.0f);
     glEnd();
     SDL_GL_SwapWindow(PSX_UI::window);
     }
-// void POLY_G4()
-// {
-// 	//printf("GL : POLY_G4\n");
-// 	glBegin(GL_TRIANGLES);
-// 	glShadeModel(GL_SMOOTH);
-// 	COLOR24(0);
-// 	VERTEX(1);
-// 	COLOR24(2);
-// 	VERTEX(3);
-// 	COLOR24(4);
-// 	VERTEX(5);
-// 	COLOR24(2);
-// 	VERTEX(3);
-// 	COLOR24(4);
-// 	VERTEX(5);
-// 	COLOR24(6);
-// 	VERTEX(7);
-// 	glEnd();
-
-// }
 
     void GP0_38h_quad_shaded_opaque(){
 // GP0(38h) - Shaded four-point polygon, opaque
@@ -553,7 +452,7 @@ namespace GP0_CMDS{
             int x = x_offset + (int16_t) (cmd[i*2+1] & 0xffff);
             int y = y_offset + (int16_t) (cmd[i*2+1] >> 16);
             verts[i].x = (float) x / 640.0f ;
-            verts[i].y = (float)y / 480.0f;
+            verts[i].y = 1-(float) y / 480.0f;
             printf("%d %d\n",x,y);
             if( i == 0 ) {
 				verts[i].r = cmd[0] & 0xFF;
@@ -567,24 +466,26 @@ namespace GP0_CMDS{
             verts[i].a = 255;
             // al_draw_circle(x,y,20.0f,getvcolor(verts[i]),0);
         }
-        glBegin(GL_TRIANGLES);
-        glShadeModel(GL_FLAT);
-        glColor3f(verts[0].r,verts[0].g,verts[0].b);
-        glVertex3f(verts[0].x,verts[0].y,0.0f);
-        glColor3f(verts[1].r,verts[1].g,verts[1].b);
-        glVertex3f(verts[1].x,verts[1].y,0.0f);
-        glColor3f(verts[2].r,verts[2].g,verts[2].b);
-        glVertex3f(verts[2].x,verts[2].y,0.0f);
-        glEnd();
-        glBegin(GL_TRIANGLES);
-        glShadeModel(GL_FLAT);
-        glColor3f(verts[1].r,verts[1].g,verts[1].b);
-        glVertex3f(verts[1].x,verts[1].y,0.0f);
-        glColor3f(verts[2].r,verts[2].g,verts[2].b);
-        glVertex3f(verts[2].x,verts[2].y,0.0f);
-        glColor3f(verts[3].r,verts[3].g,verts[3].b);
-        glVertex3f(verts[3].x,verts[3].y,0.0f);
-        glEnd();
+            glBegin(GL_TRIANGLES);
+            glShadeModel(GL_FLAT);
+            glColor3f(verts[0].r,verts[0].g,verts[0].b);
+            glVertex3f(verts[0].x,verts[0].y,0.0f);
+            glColor3f(verts[1].r,verts[1].g,verts[1].b);
+            glVertex3f(verts[1].x,verts[1].y,0.0f);
+            glColor3f(verts[2].r,verts[2].g,verts[2].b);
+            glVertex3f(verts[2].x,verts[2].y,0.0f);
+            glEnd();
+            glBegin(GL_TRIANGLES);
+            glShadeModel(GL_FLAT);
+            glColor3f(verts[1].r,verts[1].g,verts[1].b);
+            glVertex3f(verts[1].x,verts[1].y,0.0f);
+            glColor3f(verts[2].r,verts[2].g,verts[2].b);
+            glVertex3f(verts[2].x,verts[2].y,0.0f);
+            glColor3f(verts[3].r,verts[3].g,verts[3].b);
+            glVertex3f(verts[3].x,verts[3].y,0.0f);
+            glEnd();
+      
+
         SDL_GL_SwapWindow(PSX_UI::window);
     }
 
@@ -600,6 +501,94 @@ namespace GP0_CMDS{
 //   7th  Texcoord3         (0000YyXxh)
 //  (8th) Vertex4           (YyyyXxxxh) (if any)
 //  (9th) Texcoord4         (0000YyXxh) (if any)
+        using namespace Graphics;
+        using namespace PSX_UI;
+        uint32_t r = cmd[0] & 0xff;
+        uint32_t g = (cmd[0] >> 8) & 0xff;
+        uint32_t b = (cmd[0] >> 16) & 0xff;
+        vertex verts[4];
+        for(int i=0;i<4;i++){
+            int x = x_offset + (int16_t) (cmd[i*2+1] & 0xffff);
+            int y = y_offset + (int16_t) (cmd[i*2+1] >> 16);
+            verts[i].x = (float) x / 640.0f ;
+            verts[i].y = 1-(float) y / 480.0f;
+            printf("%d %d\n",x,y);
+            // if( i == 0 ) {
+			// 	verts[i].r = cmd[0] & 0xFF;
+			// 	verts[i].g = ( cmd[0] >> 8 ) & 0xFF;
+			// 	verts[i].b = ( cmd[0] >> 16 ) & 0xFF;
+			// } else {
+			// 	verts[i].r = cmd[i*2] & 0xFF;
+			// 	verts[i].g = ( cmd[i*2] >> 8 ) & 0xFF;
+			// 	verts[i].b = ( cmd[i*2] >> 16 ) & 0xFF;
+			// }
+            verts[i].a = 255;
+            // al_draw_circle(x,y,20.0f,getvcolor(verts[i]),0);
+        }
+            // glBegin(GL_TRIANGLES);
+            // glShadeModel(GL_FLAT);
+            // glColor3f(verts[0].r,verts[0].g,verts[0].b);
+            // glVertex3f(verts[0].x,verts[0].y,0.0f);
+            // glColor3f(verts[1].r,verts[1].g,verts[1].b);
+            // glVertex3f(verts[1].x,verts[1].y,0.0f);
+            // glColor3f(verts[2].r,verts[2].g,verts[2].b);
+            // glVertex3f(verts[2].x,verts[2].y,0.0f);
+            // glEnd();
+            // glBegin(GL_TRIANGLES);
+            // glShadeModel(GL_FLAT);
+            // glColor3f(verts[1].r,verts[1].g,verts[1].b);
+            // glVertex3f(verts[1].x,verts[1].y,0.0f);
+            // glColor3f(verts[2].r,verts[2].g,verts[2].b);
+            // glVertex3f(verts[2].x,verts[2].y,0.0f);
+            // glColor3f(verts[3].r,verts[3].g,verts[3].b);
+            // glVertex3f(verts[3].x,verts[3].y,0.0f);
+            // glEnd();
+        
+        VRAM::tclut clut;
+	    VRAM::tpage page;
+	    clut.full = cmd[2]>>16;
+	    page.full = cmd[4]>>16;
+        uint32_t x=CMD_X(1);	
+	    uint32_t y=CMD_Y(1);
+
+	    uint32_t w=(CMD_X(3)-x);
+	    uint32_t h=(CMD_Y(7)-y);
+        uint32_t tx=page.xb*64;
+        uint32_t ty=page.yb*256;
+
+        uint32_t cx=clut.x*16;
+        uint32_t cy=clut.y;
+
+        uint32_t table[16];
+        uint32_t image[256*4][256];
+
+        for(int i=0;i<16;i++)
+            table[i]=VRAM::frame_buffer[cx+i][cy].raw;
+        
+        for(int i=0;i<w/4;i++)
+            for(int j=0;j<h;j++)
+            {
+                image[i*4+0][j]=table[VRAM::frame_buffer[tx+i][ty+j].ll];
+                image[i*4+1][j]=table[VRAM::frame_buffer[tx+i][ty+j].ml];
+                image[i*4+2][j]=table[VRAM::frame_buffer[tx+i][ty+j].mr];
+                image[i*4+3][j]=table[VRAM::frame_buffer[tx+i][ty+j].rr];
+            }
+      
+        glBegin(GL_POINTS);
+        for(int i=0;i<w;i++)
+            for(int j=0;j<h;j++)
+            {
+                if(image[i][j]==0) continue;
+                COLOR16_REV(image[i][j]);
+                // glVertex2i(x+i,y+j);
+                glVertex2f((float)(x+i)/(float)640.0f,1-(float)(y+j)/(float)480.0f);
+            }
+        glEnd();
+        SDL_GL_SwapWindow(PSX_UI::window);
+
+
+
+
     }
 
 

@@ -106,7 +106,7 @@ namespace GPU{
                 case 0x22:// GP0(22h) - Monochrome three-point polygon, semi-transparent
                     // POLY_F3
                     REQUIRE(4);
-                    GP0_CMDS::GP0_22h();
+                    // GP0_CMDS::GP0_22h();
                     cmd.clear();
                     break;
                 
@@ -144,11 +144,6 @@ namespace GPU{
                     REQUIRE(6);
                     GP0_CMDS::GP0_30h_triangle_shaded_opaque();
                     cmd.clear();
-                    // printf(" 30tri");
-                    // while(1){
-                    //     ;/* code */
-                    // }
-                    
                     break;
 
 

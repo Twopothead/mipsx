@@ -51,15 +51,6 @@ namespace PSX_UI{
         window = NULL;
         SDL_Quit();
     }
-    // ALLEGRO_COLOR getvcolor(Graphics::vertex v){
-    //     ALLEGRO_COLOR color;
-    //     color.a = v.a;
-    //     color.r = v.r;
-    //     color.g = v.g;
-    //     color.b = v.b;
-    //     return color;
-    // }
-
 }
 // https://packages.ubuntu.com/search?searchon=contents&keywords=GL/glew.h&mode=exactfilename&suite=trusty&arch=any
 // /usr/include/GL/glew.h	libglew-dev

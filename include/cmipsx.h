@@ -38,6 +38,7 @@ class MIPSX_SYSTEM
         // DMA::DPCR= 0x07654321;
         DMA::dpcr.raw = 0x07654321;
         GPU::resetGPU();
+        
     };
     friend class Monitor;
     void IF(pr::Pre_IF_t &Pre_IF, pr::IF_ID_t &IF_ID)
