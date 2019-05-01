@@ -7,9 +7,9 @@ SOURCES = $(shell find ./include/ -name "*.cc")
 OBJECTS = $(SOURCES:.cc=.o)
 CXXFLAGS = -std=c++11 -I ./include/
 
-LDFLAGS = -lallegro -lallegro_main -lallegro_primitives
+# LDFLAGS = -lallegro -lallegro_main -lallegro_primitives
 LDFLAGS += -lSDL2 -lGL
-LDFLAGS += -lglfw
+# LDFLAGS += -lglfw
 LDFLAGS += -lGLEW 
 
 TARGET = build/miPSX

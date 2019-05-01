@@ -15,6 +15,7 @@
 #include "dma.h"
 #include <iostream>
 #include "gpu.h"
+#include "psx_exe.h"
 namespace pr = pipeline_registers;
 bool show_stage_log = false;
 namespace Log{
@@ -659,6 +660,23 @@ class MIPSX_SYSTEM
                 ;
         }
     }
+    void loadEXE(const char * exe_name){
+        PSX_EXE::EXEheader_t * exe = (PSX_EXE::EXEheader_t *)PSX_EXE::load(exe_name);
+        printf("exe id : %.*s\n",8,exe->id);
+        printf("scei string : %s\n",exe->SCEI);
+        printf("pc : 0x%.8X \n",exe->pc);
+        printf("load address : 0x%.8X\n",exe->dst);
+        printf("load size : 0x%.8X\n",exe->size);
+
+        pipeline_registers::Pre_IF.PC = exe->pc;
+        cpu.gp.R28_GP = exe->gp;
+        cpu.gp.R29_SP = exe->sp + exe->spOffset;
+        cpu.gp.R30_FP = cpu.gp.R29_SP;
+        for(int i=0;i<exe->size;i++){
+            memory.write_wrapper(exe->dst+i,exe->data[i],8);
+        }
+        
+    }
     void tick()
     {
         using namespace pipeline_registers;
@@ -686,11 +704,22 @@ class MIPSX_SYSTEM
             printf("[%06d] ",mipsx_cycle);
             printf("0x%08x ",MEM_WB.debug_wbPC);
         }
+        // load psx-exe 
+        // if(MEM_WB.debug_wbPC==SHELL_MAIN){
+        //     loadEXE("../demos/psxtest_cpu/psxtest_cpu.exe");
+        //     // loadEXE("../demos/HelloWorld24BPP.exe");
+            
+        // }
+
+
                 
         if(mipsx_cycle>0 && Log::log)
                 printf("0x%08x",MEM_WB.IR);
         if(mipsx_cycle>0 && Log::log)
-                    printf("\n"); 
+                    printf("\n");
+
+
+
            
         // hack_intercept_BIOS_Putchar();
            

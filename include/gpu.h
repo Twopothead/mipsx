@@ -84,6 +84,14 @@ namespace GPU{
                 return;
             }
 
+            if(gpu2gpu_transfer.run.active == true){
+                vram2vram(\
+                    VRAM::vread(gpu2gpu_transfer.reg.src_x,gpu2gpu_transfer.reg.src_y)\
+                    );
+                return;
+            }
+
+
             cmd.push_back(data);
             switch ( cmd[0]>>24 & 0xff)
             {
@@ -159,6 +167,12 @@ namespace GPU{
 
                 case 0x42:// GP0(42h) - Monochrome line, semi-transparent
                     // 
+                    cmd.clear();
+                    break;
+
+                case 0x80://  GP0(80h) - Copy Rectangle (VRAM to VRAM)
+                    REQUIRE(4);
+                    GP0_CMDS::GP0_80h_vramtovram(data);
                     cmd.clear();
                     break;
 

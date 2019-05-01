@@ -1,11 +1,11 @@
 #pragma once
 #include "bitwise.h"
 #include "gpu.h"
-#include "inttypes.h"
+#include <inttypes.h>
 #include "draw.h"
 #include "vram.h"
 #include "ui.h"
- #include <unistd.h>
+#include <unistd.h>
 namespace GPU{
         uint32_t texture_window_mask_x;
         uint32_t texture_window_mask_y;
@@ -95,6 +95,22 @@ namespace GPU{
             }run;
         };
 
+        struct GPU2GPU_transfer_t{
+            struct {
+                uint32_t dst_x;
+                uint32_t dst_y;
+                uint32_t src_x;
+                uint32_t src_y;
+                uint32_t w;
+                uint32_t h;                
+            }reg;
+            struct {
+                uint32_t active;
+                uint32_t x;
+                uint32_t y;
+            }run;
+        };
+
         struct point_t{
             uint32_t x;
             uint32_t y;
@@ -112,6 +128,7 @@ namespace GPU{
 
         CPU2GPU_transfer_t  cpu2gpu_transfer;
         GPU2CPU_transfer_t  gpu2cpu_transfer;
+        GPU2GPU_transfer_t  gpu2gpu_transfer;
         // using namespace VRAM;
         void vram_transfer(uint16_t data){// be used frequently
             if(!cpu2gpu_transfer.run.active){
@@ -130,6 +147,28 @@ namespace GPU{
                     cpu2gpu_transfer.run.y = 0;
                     cpu2gpu_transfer.run.active = false;// finish
                     x__log("cpu2vram transfer finish");
+    
+                }
+            }
+        }
+        
+        void vram2vram(uint16_t data){
+            if(!gpu2gpu_transfer.run.active){
+                return;
+            }
+            VRAM::vwrite(
+                gpu2gpu_transfer.reg.dst_x + gpu2gpu_transfer.run.x,
+                gpu2gpu_transfer.reg.dst_x + gpu2gpu_transfer.run.y,
+                uint16_t(data)
+            );
+            gpu2gpu_transfer.run.x++;
+            if(gpu2gpu_transfer.run.x == gpu2gpu_transfer.reg.w){
+                gpu2gpu_transfer.run.x = 0;
+                gpu2gpu_transfer.run.y ++;
+                if(gpu2gpu_transfer.run.y == gpu2gpu_transfer.reg.h){
+                    gpu2gpu_transfer.run.y = 0;
+                    gpu2gpu_transfer.run.active = false;// finish
+                    x__log("vram2vram transfer finish");
     
                 }
             }
@@ -294,7 +333,7 @@ namespace GP0_CMDS{
 
     //         SDL_FillRect( PSX_UI::surface, NULL, SDL_MapRGB( PSX_UI::surface->format, 0x11, 0x22, 0x33 ) );
     // SDL_UpdateWindowSurface( PSX_UI::window );
-        x__err("画图 Draw quad 未完待续");
+        // x__err("画图 Draw quad 未完待续");
         uint32_t r = cmd[0] & 0xff;
         uint32_t g = (cmd[0] >> 8) & 0xff;
         uint32_t b = (cmd[0] >> 16) & 0xff;
@@ -304,7 +343,7 @@ namespace GP0_CMDS{
             int y = y_offset + (int16_t) (cmd[i+1] >> 16);
             verts[i].x = (float)x / 640.0f;
             verts[i].y = 1-(float)y / 480.0f;
-            printf("%d %d\n",x,y);
+            // printf("%d %d\n",x,y);
             verts[i].r = r;
             verts[i].g = g;
             verts[i].b = b;
@@ -348,6 +387,25 @@ namespace GP0_CMDS{
     }
 // GP0(20h) - Monochrome three-point polygon, opaque
 // GP0(22h) - Monochrome three-point polygon, semi-transparent
+    void GP0_80h_vramtovram(uint32_t data){//   1st  Command           (Cc000000h)
+// GP0(80h) - Copy Rectangle (VRAM to VRAM)
+        gpu2gpu_transfer.reg.src_x = cmd[1] & 0xffff;
+        gpu2gpu_transfer.reg.src_y = cmd[1] >> 16;
+        gpu2gpu_transfer.reg.dst_x = cmd[2] & 0xffff;//   3  Destination Coord (YyyyXxxxh)  ;Xpos counted in halfwords
+        gpu2gpu_transfer.reg.dst_y = cmd[2] >> 16;
+        gpu2gpu_transfer.reg.w = cmd[3] & 0xffff;//   4  Width+Height      (YsizXsizh)  ;Xsiz counted in halfwords
+        gpu2gpu_transfer.reg.h = cmd[3] >> 16;
+        //   ...  Data              (...)      <--- usually transferred via DMA
+        // uint32_t imagesize = cpu2gpu_transfer.reg.w*cpu2gpu_transfer.reg.h;
+        // imagesize = (imagesize+1);
+        // uint32_t gp0_words_remaining = (imagesize)/2;
+        // x__log("gp0_words_remaining %d",gp0_words_remaining);
+        gpu2gpu_transfer.run.x = 0;
+        gpu2gpu_transfer.run.y = 0;
+        gpu2gpu_transfer.run.active = true;
+
+    }
+
 
 // GP0(2Ah) - Monochrome four-point polygon, semi-transparent
 //   1st  Color+Command     (CcBbGgRrh)
@@ -405,7 +463,7 @@ namespace GP0_CMDS{
         int y = y_offset + (int16_t) (cmd[i*2+1] >> 16);
         verts[i].x = (float) x / 640.0f ;
         verts[i].y = 1-(float)y / 480.0f;
-        printf("%d %d\n",x,y);
+        // printf("%d %d\n",x,y);
         if(i==0){
             verts[i].r = cmd[0] & 0xff;
             verts[i].g = (cmd[0] >> 8) & 0xff;
@@ -512,7 +570,7 @@ namespace GP0_CMDS{
             int y = y_offset + (int16_t) (cmd[i*2+1] >> 16);
             verts[i].x = (float) x / 640.0f ;
             verts[i].y = 1-(float) y / 480.0f;
-            printf("%d %d\n",x,y);
+            // printf("%d %d\n",x,y);
             // if( i == 0 ) {
 			// 	verts[i].r = cmd[0] & 0xFF;
 			// 	verts[i].g = ( cmd[0] >> 8 ) & 0xFF;

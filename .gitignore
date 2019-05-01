@@ -1,0 +1,4 @@
+/bios/SCPH1001.BIN
+.vscode/
+/include/.vscode
+/include/*.o

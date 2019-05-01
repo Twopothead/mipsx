@@ -55,3 +55,36 @@ namespace PSX_UI{
 // https://packages.ubuntu.com/search?searchon=contents&keywords=GL/glew.h&mode=exactfilename&suite=trusty&arch=any
 // /usr/include/GL/glew.h	libglew-dev
 // sudo apt install libglew-dev
+// 语法高亮vscode-armips
+// https://github.com/shygoo/vscode-armips
+// cd ~/.vscode/extensions
+// git clone http://github.com/shygoo/vscode-armips
+// https://github.com/PeterLemon/PSX
+// https://packages.ubuntu.com/source/bionic/allegro5
+
+// https://github.com/johnny-mac/psxact
+// https://github.com/JaCzekanski/Avocado
+// https://github.com/truesurge/psx_v110
+// https://github.com/faouellet/PSEmu
+// https://github.com/emvivre/Sony-PS1-executable-disassembler
+// https://github.com/williamblair/SimiasPSX
+// https://github.com/daeken/WebStation
+// https://github.com/oaleshina/pscx_emulator
+// https://github.com/googl4/LPSX
+// https://github.com/dkoluris/pseudo
+// https://github.com/dkoluris/pseudo-js/tree/master/homebrew
+// http://www.psxdev.net/homebrew.html
+// The emulator contains several modules that are needed to successfully run BIOS or PS logo screen if disc is present.
+
+https://github.com/johnny-mac/psxact
+https://github.com/JaCzekanski/Avocado
+https://github.com/truesurge/psx_v110
+https://github.com/faouellet/PSEmu
+https://github.com/emvivre/Sony-PS1-executable-disassembler
+https://github.com/williamblair/SimiasPSX
+https://github.com/daeken/WebStation
+https://github.com/oaleshina/pscx_emulator
+https://github.com/googl4/LPSX
+https://github.com/dkoluris/pseudo
+https://github.com/dkoluris/pseudo-js/tree/master/homebrew
+http://www.psxdev.net/homebrew.html

@@ -666,6 +666,7 @@ namespace CONTROL{
                         ALUOP = ALU_SLT;
                         break;
                     case 0b001011:/* sltiu*/
+                        CTRL_UNIT.o_sext = true;
                         CTRL_UNIT.o_regrt = true;
                         CTRL_UNIT.o_aluimm = true;
                         CTRL_UNIT.o_wreg = true;
